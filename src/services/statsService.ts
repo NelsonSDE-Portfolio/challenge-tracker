@@ -1,5 +1,5 @@
 import { api } from '../lib/api';
-import type { ChallengeStats, MyStats, ParticipantStats } from '../types/stats';
+import type { ChallengeStats, MyStats, ParticipantStats, AdminDashboard } from '../types/stats';
 
 interface ChallengeStatsResponse {
   stats: ChallengeStats;
@@ -15,6 +15,10 @@ interface LeaderboardResponse {
 
 interface ParticipantStatsResponse {
   stats: ParticipantStats;
+}
+
+interface AdminDashboardResponse {
+  dashboard: AdminDashboard;
 }
 
 export const statsService = {
@@ -47,6 +51,13 @@ export const statsService = {
       `/challenges/${challengeId}/stats/participants/${userId}`,
     );
     return response.data.stats;
+  },
+
+  async getAdminDashboard(challengeId: string): Promise<AdminDashboard> {
+    const response = await api.get<AdminDashboardResponse>(
+      `/challenges/${challengeId}/stats/admin`,
+    );
+    return response.data.dashboard;
   },
 
   formatCurrency(amount: number): string {

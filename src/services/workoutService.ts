@@ -2,6 +2,7 @@ import { api } from '../lib/api';
 import type {
   WorkoutLog,
   CreateWorkoutData,
+  AdminCreateWorkoutData,
   WorkoutStats,
   PresignedUrlResponse,
 } from '../types/workout';
@@ -50,6 +51,17 @@ export const workoutService = {
   ): Promise<WorkoutLog> {
     const response = await api.post<WorkoutResponse>(
       `/challenges/${challengeId}/workouts`,
+      data,
+    );
+    return response.data.workout;
+  },
+
+  async adminCreate(
+    challengeId: string,
+    data: AdminCreateWorkoutData,
+  ): Promise<WorkoutLog> {
+    const response = await api.post<WorkoutResponse>(
+      `/challenges/${challengeId}/workouts/admin`,
       data,
     );
     return response.data.workout;

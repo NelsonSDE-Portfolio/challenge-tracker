@@ -15,6 +15,13 @@ export interface CreateWorkoutData {
   note?: string;
 }
 
+export interface AdminCreateWorkoutData {
+  userId: string;
+  date: string;
+  photoUrl?: string;
+  note?: string;
+}
+
 export interface WorkoutStats {
   totalWorkouts: number;
   weeklyWorkouts: number;

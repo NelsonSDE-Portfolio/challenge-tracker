@@ -7,10 +7,13 @@ import { WorkoutHistory } from './WorkoutHistory';
 import { WorkoutCalendar } from './WorkoutCalendar';
 import { StatsOverview } from './StatsOverview';
 import { Leaderboard } from './Leaderboard';
+import { AdminDashboard } from './AdminDashboard';
+import { AdminAddWorkout } from './AdminAddWorkout';
+import { ChallengeSettings } from './ChallengeSettings';
 import type { Challenge, Participant } from '../types/challenge';
 import type { MyStats } from '../types/stats';
 
-type TabType = 'overview' | 'stats' | 'calendar' | 'leaderboard' | 'history';
+type TabType = 'overview' | 'stats' | 'calendar' | 'leaderboard' | 'history' | 'admin';
 
 export function ChallengeDetail() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +26,11 @@ export function ChallengeDetail() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [showAdminAddWorkout, setShowAdminAddWorkout] = useState<{
+    userId: string;
+    userName: string;
+  } | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -199,7 +207,10 @@ export function ChallengeDetail() {
       {/* Tabs */}
       <div className="border-b border-gray-200 overflow-x-auto">
         <nav className="flex gap-4 min-w-max">
-          {(['overview', 'stats', 'calendar', 'leaderboard', 'history'] as TabType[]).map((tab) => (
+          {(challenge.isAdmin
+            ? ['overview', 'stats', 'calendar', 'leaderboard', 'history', 'admin'] as TabType[]
+            : ['overview', 'stats', 'calendar', 'leaderboard', 'history'] as TabType[]
+          ).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -209,7 +220,11 @@ export function ChallengeDetail() {
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              {tab === 'stats' ? 'Stats & Debt' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === 'stats'
+                ? 'Stats & Debt'
+                : tab === 'admin'
+                ? 'Admin'
+                : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </nav>
@@ -313,6 +328,51 @@ export function ChallengeDetail() {
               </div>
               <WorkoutHistory challengeId={challenge._id} />
             </>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'admin' && challenge.isAdmin && (
+        <div className="space-y-4">
+          {/* Admin Actions Bar */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowSettings(true)}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center gap-2"
+            >
+              <span>⚙️</span>
+              Settings
+            </button>
+          </div>
+
+          {showSettings ? (
+            <ChallengeSettings
+              challenge={challenge}
+              onSuccess={() => {
+                setShowSettings(false);
+                if (id) loadChallenge(id);
+              }}
+              onCancel={() => setShowSettings(false)}
+            />
+          ) : showAdminAddWorkout ? (
+            <AdminAddWorkout
+              challengeId={challenge._id}
+              userId={showAdminAddWorkout.userId}
+              userName={showAdminAddWorkout.userName}
+              onSuccess={() => {
+                setShowAdminAddWorkout(null);
+                if (id) loadMyStats(id);
+              }}
+              onCancel={() => setShowAdminAddWorkout(null)}
+            />
+          ) : (
+            <AdminDashboard
+              challengeId={challenge._id}
+              minWorkoutsPerWeek={challenge.rules.minWorkoutsPerWeek}
+              onAddWorkout={(userId, userName) =>
+                setShowAdminAddWorkout({ userId, userName })
+              }
+            />
           )}
         </div>
       )}
