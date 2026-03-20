@@ -1,19 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { challengeService } from '../services/challengeService';
-import type { Challenge } from '../types/challenge';
+import { workoutService } from '../services/workoutService';
+import { LogWorkoutForm } from './LogWorkoutForm';
+import { WorkoutHistory } from './WorkoutHistory';
+import { WorkoutCalendar } from './WorkoutCalendar';
+import type { Challenge, Participant } from '../types/challenge';
+import type { WorkoutStats } from '../types/workout';
+
+type TabType = 'overview' | 'calendar' | 'history' | 'participants';
 
 export function ChallengeDetail() {
   const { id } = useParams<{ id: string }>();
   const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [stats, setStats] = useState<WorkoutStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [showLogWorkout, setShowLogWorkout] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
 
   useEffect(() => {
     if (id) {
       loadChallenge(id);
+      loadStats(id);
     }
   }, [id]);
 
@@ -27,6 +39,22 @@ export function ChallengeDetail() {
       setError(err.response?.data?.message || 'Failed to load challenge');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStats = async (challengeId: string) => {
+    try {
+      const data = await workoutService.getStats(challengeId);
+      setStats(data);
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    }
+  };
+
+  const handleWorkoutLogged = () => {
+    setShowLogWorkout(false);
+    if (id) {
+      loadStats(id);
     }
   };
 
@@ -71,13 +99,20 @@ export function ChallengeDetail() {
     return (
       <div className="text-center py-8">
         <p className="text-red-500 mb-4">{error || 'Challenge not found'}</p>
-        <Link
-          to="/challenges"
-          className="text-blue-600 hover:text-blue-700"
-        >
+        <Link to="/challenges" className="text-blue-600 hover:text-blue-700">
           Back to challenges
         </Link>
       </div>
+    );
+  }
+
+  if (showLogWorkout) {
+    return (
+      <LogWorkoutForm
+        challengeId={challenge._id}
+        onSuccess={handleWorkoutLogged}
+        onCancel={() => setShowLogWorkout(false)}
+      />
     );
   }
 
@@ -100,13 +135,30 @@ export function ChallengeDetail() {
         {getStatusBadge(challenge.status)}
       </div>
 
+      {/* Log Workout Button */}
+      {challenge.status === 'active' && (
+        <button
+          onClick={() => setShowLogWorkout(true)}
+          className="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition flex items-center justify-center gap-2"
+        >
+          <span className="text-xl">💪</span>
+          Log Today's Workout
+        </button>
+      )}
+
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-4 text-center">
-          <p className="text-2xl font-bold text-blue-600">
-            {challenge.rules.minWorkoutsPerWeek}
+          <p className="text-2xl font-bold text-green-600">
+            {stats?.totalWorkouts || 0}
           </p>
-          <p className="text-sm text-gray-500">Workouts/Week</p>
+          <p className="text-sm text-gray-500">Total Workouts</p>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 text-center">
+          <p className="text-2xl font-bold text-blue-600">
+            {stats?.weeklyWorkouts || 0}/{challenge.rules.minWorkoutsPerWeek}
+          </p>
+          <p className="text-sm text-gray-500">This Week</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4 text-center">
           <p className="text-2xl font-bold text-red-600">
@@ -119,15 +171,6 @@ export function ChallengeDetail() {
             {challenge.participants?.length || 0}
           </p>
           <p className="text-sm text-gray-500">Participants</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4 text-center">
-          <p className="text-sm font-medium text-gray-800">
-            {formatDate(challenge.startDate)}
-          </p>
-          <p className="text-xs text-gray-500">to</p>
-          <p className="text-sm font-medium text-gray-800">
-            {formatDate(challenge.endDate)}
-          </p>
         </div>
       </div>
 
@@ -151,50 +194,138 @@ export function ChallengeDetail() {
         </div>
       )}
 
-      {/* Participants */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-800">Participants</h2>
-        </div>
-        <div className="divide-y divide-gray-100">
-          {challenge.participants?.map((participant) => (
-            <div
-              key={participant.userId}
-              className="p-4 flex items-center justify-between"
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-4">
+          {(['overview', 'calendar', 'history', 'participants'] as TabType[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition ${
+                activeTab === tab
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span className="text-gray-600 font-medium">
-                    {(participant.name || participant.email || 'U').charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-800">
-                    {participant.name || participant.email || 'Unknown User'}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Joined {formatDate(participant.joinedAt)}
-                  </p>
-                </div>
-              </div>
-              {participant.role === 'admin' && (
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                  Admin
-                </span>
-              )}
-            </div>
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
           ))}
-        </div>
+        </nav>
       </div>
 
-      {/* Placeholder for workout logging */}
-      <div className="bg-white rounded-lg shadow p-6 text-center">
-        <div className="text-gray-400 text-4xl mb-3">💪</div>
-        <h3 className="font-medium text-gray-700 mb-2">Workout Logging</h3>
-        <p className="text-gray-500 text-sm">
-          Workout logging will be available in the next update
-        </p>
-      </div>
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-lg shadow p-4">
+            <h3 className="font-semibold text-gray-800 mb-3">Challenge Details</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Required Workouts</span>
+                <span className="font-medium">{challenge.rules.minWorkoutsPerWeek}x per week</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Penalty Amount</span>
+                <span className="font-medium">${challenge.rules.penaltyAmount} per miss</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Duration</span>
+                <span className="font-medium">
+                  {formatDate(challenge.startDate)} - {formatDate(challenge.endDate)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Workouts Preview */}
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-semibold text-gray-800">Recent Workouts</h3>
+              <button
+                onClick={() => setActiveTab('history')}
+                className="text-sm text-blue-600 hover:text-blue-700"
+              >
+                View All
+              </button>
+            </div>
+            <WorkoutHistory challengeId={challenge._id} showHeader={false} />
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'calendar' && (
+        <WorkoutCalendar
+          challengeId={challenge._id}
+          startDate={challenge.startDate}
+          endDate={challenge.endDate}
+          minWorkoutsPerWeek={challenge.rules.minWorkoutsPerWeek}
+        />
+      )}
+
+      {activeTab === 'history' && (
+        <div className="bg-white rounded-lg shadow p-4">
+          {selectedParticipant ? (
+            <>
+              <button
+                onClick={() => setSelectedParticipant(null)}
+                className="text-sm text-gray-500 hover:text-gray-700 mb-3"
+              >
+                ← Back to your history
+              </button>
+              <WorkoutHistory
+                challengeId={challenge._id}
+                userId={selectedParticipant.userId}
+                userName={selectedParticipant.name || selectedParticipant.email}
+              />
+            </>
+          ) : (
+            <WorkoutHistory challengeId={challenge._id} />
+          )}
+        </div>
+      )}
+
+      {activeTab === 'participants' && (
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-4 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-800">Participants</h2>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {challenge.participants?.map((participant) => (
+              <div
+                key={participant.userId}
+                className="p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer"
+                onClick={() => {
+                  setSelectedParticipant(participant);
+                  setActiveTab('history');
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="text-gray-600 font-medium">
+                      {(participant.name || participant.email || 'U').charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-800">
+                      {participant.name || participant.email || 'Unknown User'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Joined {formatDate(participant.joinedAt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {participant.role === 'admin' && (
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                      Admin
+                    </span>
+                  )}
+                  <span className="text-sm text-gray-400">View workouts →</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Invite Modal */}
       {showInviteModal && challenge.inviteCode && (
