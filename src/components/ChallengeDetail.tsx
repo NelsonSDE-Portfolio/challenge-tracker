@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { challengeService } from '../services/challengeService';
-import { workoutService } from '../services/workoutService';
+import { statsService } from '../services/statsService';
 import { LogWorkoutForm } from './LogWorkoutForm';
 import { WorkoutHistory } from './WorkoutHistory';
 import { WorkoutCalendar } from './WorkoutCalendar';
+import { StatsOverview } from './StatsOverview';
+import { Leaderboard } from './Leaderboard';
 import type { Challenge, Participant } from '../types/challenge';
-import type { WorkoutStats } from '../types/workout';
+import type { MyStats } from '../types/stats';
 
-type TabType = 'overview' | 'calendar' | 'history' | 'participants';
+type TabType = 'overview' | 'stats' | 'calendar' | 'leaderboard' | 'history';
 
 export function ChallengeDetail() {
   const { id } = useParams<{ id: string }>();
   const [challenge, setChallenge] = useState<Challenge | null>(null);
-  const [stats, setStats] = useState<WorkoutStats | null>(null);
+  const [myStats, setMyStats] = useState<MyStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -25,7 +27,7 @@ export function ChallengeDetail() {
   useEffect(() => {
     if (id) {
       loadChallenge(id);
-      loadStats(id);
+      loadMyStats(id);
     }
   }, [id]);
 
@@ -42,10 +44,10 @@ export function ChallengeDetail() {
     }
   };
 
-  const loadStats = async (challengeId: string) => {
+  const loadMyStats = async (challengeId: string) => {
     try {
-      const data = await workoutService.getStats(challengeId);
-      setStats(data);
+      const data = await statsService.getMyStats(challengeId);
+      setMyStats(data);
     } catch (err) {
       console.error('Failed to load stats:', err);
     }
@@ -54,7 +56,7 @@ export function ChallengeDetail() {
   const handleWorkoutLogged = () => {
     setShowLogWorkout(false);
     if (id) {
-      loadStats(id);
+      loadMyStats(id);
     }
   };
 
@@ -149,22 +151,22 @@ export function ChallengeDetail() {
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-4 text-center">
-          <p className="text-2xl font-bold text-green-600">
-            {stats?.totalWorkouts || 0}
+          <p className={`text-2xl font-bold ${myStats?.debt === 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {myStats?.debt === 0 ? '✓' : `$${myStats?.debt || 0}`}
           </p>
-          <p className="text-sm text-gray-500">Total Workouts</p>
+          <p className="text-sm text-gray-500">Your Debt</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4 text-center">
           <p className="text-2xl font-bold text-blue-600">
-            {stats?.weeklyWorkouts || 0}/{challenge.rules.minWorkoutsPerWeek}
+            {myStats?.weeklyWorkouts || 0}/{challenge.rules.minWorkoutsPerWeek}
           </p>
           <p className="text-sm text-gray-500">This Week</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4 text-center">
-          <p className="text-2xl font-bold text-red-600">
-            ${challenge.rules.penaltyAmount}
+          <p className="text-2xl font-bold text-orange-600">
+            {myStats?.currentStreak ? `🔥 ${myStats.currentStreak}` : '0'}
           </p>
-          <p className="text-sm text-gray-500">Per Miss</p>
+          <p className="text-sm text-gray-500">Week Streak</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4 text-center">
           <p className="text-2xl font-bold text-purple-600">
@@ -195,19 +197,19 @@ export function ChallengeDetail() {
       )}
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="flex gap-4">
-          {(['overview', 'calendar', 'history', 'participants'] as TabType[]).map((tab) => (
+      <div className="border-b border-gray-200 overflow-x-auto">
+        <nav className="flex gap-4 min-w-max">
+          {(['overview', 'stats', 'calendar', 'leaderboard', 'history'] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition whitespace-nowrap ${
                 activeTab === tab
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === 'stats' ? 'Stats & Debt' : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </nav>
@@ -252,12 +254,33 @@ export function ChallengeDetail() {
         </div>
       )}
 
+      {activeTab === 'stats' && (
+        <StatsOverview
+          challengeId={challenge._id}
+          minWorkoutsPerWeek={challenge.rules.minWorkoutsPerWeek}
+        />
+      )}
+
       {activeTab === 'calendar' && (
         <WorkoutCalendar
           challengeId={challenge._id}
           startDate={challenge.startDate}
           endDate={challenge.endDate}
           minWorkoutsPerWeek={challenge.rules.minWorkoutsPerWeek}
+        />
+      )}
+
+      {activeTab === 'leaderboard' && (
+        <Leaderboard
+          challengeId={challenge._id}
+          minWorkoutsPerWeek={challenge.rules.minWorkoutsPerWeek}
+          onParticipantClick={(userId) => {
+            const participant = challenge.participants?.find(p => p.userId === userId);
+            if (participant) {
+              setSelectedParticipant(participant);
+              setActiveTab('history');
+            }
+          }}
         />
       )}
 
@@ -278,52 +301,19 @@ export function ChallengeDetail() {
               />
             </>
           ) : (
-            <WorkoutHistory challengeId={challenge._id} />
-          )}
-        </div>
-      )}
-
-      {activeTab === 'participants' && (
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-4 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-800">Participants</h2>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {challenge.participants?.map((participant) => (
-              <div
-                key={participant.userId}
-                className="p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer"
-                onClick={() => {
-                  setSelectedParticipant(participant);
-                  setActiveTab('history');
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                    <span className="text-gray-600 font-medium">
-                      {(participant.name || participant.email || 'U').charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-800">
-                      {participant.name || participant.email || 'Unknown User'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Joined {formatDate(participant.joinedAt)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {participant.role === 'admin' && (
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                      Admin
-                    </span>
-                  )}
-                  <span className="text-sm text-gray-400">View workouts →</span>
-                </div>
+            <>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-semibold text-gray-800">Your Workouts</h3>
+                <button
+                  onClick={() => setActiveTab('leaderboard')}
+                  className="text-sm text-blue-600 hover:text-blue-700"
+                >
+                  View others' workouts
+                </button>
               </div>
-            ))}
-          </div>
+              <WorkoutHistory challengeId={challenge._id} />
+            </>
+          )}
         </div>
       )}
 
