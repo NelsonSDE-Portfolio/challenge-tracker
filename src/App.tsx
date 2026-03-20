@@ -1,14 +1,76 @@
+import { useState } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
+import { ChallengeList } from './components/ChallengeList';
+import { ChallengeDetail } from './components/ChallengeDetail';
+import { CreateChallengeForm } from './components/CreateChallengeForm';
+import { JoinChallengeForm } from './components/JoinChallengeForm';
+import { JoinChallengePage } from './pages/JoinChallengePage';
 import './App.css';
+
+function ChallengeDashboard() {
+  const [showCreate, setShowCreate] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
+  const navigate = useNavigate();
+
+  const handleCreateSuccess = (challengeId: string) => {
+    setShowCreate(false);
+    navigate(`/challenges/${challengeId}`);
+  };
+
+  const handleJoinSuccess = (challengeId: string) => {
+    setShowJoin(false);
+    navigate(`/challenges/${challengeId}`);
+  };
+
+  if (showCreate) {
+    return (
+      <CreateChallengeForm
+        onSuccess={handleCreateSuccess}
+        onCancel={() => setShowCreate(false)}
+      />
+    );
+  }
+
+  if (showJoin) {
+    return (
+      <JoinChallengeForm
+        onSuccess={handleJoinSuccess}
+        onCancel={() => setShowJoin(false)}
+      />
+    );
+  }
+
+  return (
+    <ChallengeList
+      onCreateClick={() => setShowCreate(true)}
+      onJoinClick={() => setShowJoin(true)}
+    />
+  );
+}
+
+function UnauthenticatedView() {
+  return (
+    <div className="text-center py-12">
+      <div className="text-gray-400 text-5xl mb-4">🔒</div>
+      <h2 className="text-xl font-semibold text-gray-700 mb-2">
+        Please Log In
+      </h2>
+      <p className="text-gray-500">
+        You need to be logged in to access Challenge Tracker
+      </p>
+    </div>
+  );
+}
 
 function App() {
   const { user, isAuthenticated } = useAuth();
 
   return (
     <div className="challenge-tracker">
-      <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg shadow-lg">
+      <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg shadow-lg mb-6">
         <h1 className="text-3xl font-bold">Challenge Tracker</h1>
-        <p className="mt-2 opacity-90">Track your challenges and goals</p>
+        <p className="mt-2 opacity-90">Track your accountability challenges</p>
         {isAuthenticated && user && (
           <p className="mt-1 text-sm opacity-75">
             Logged in as {user.name || user.email}
@@ -16,59 +78,17 @@ function App() {
         )}
       </header>
 
-      <main className="mt-6 p-6 bg-white rounded-lg shadow">
+      <main>
         {isAuthenticated ? (
-          <div className="space-y-6">
-            <div className="text-center py-8">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Welcome, {user?.name || user?.email}!
-              </h2>
-              <p className="text-gray-600">
-                Your challenges will appear here once you create or join one.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center">
-                <h3 className="text-lg font-medium text-gray-700 mb-2">
-                  Create Challenge
-                </h3>
-                <p className="text-gray-500 text-sm mb-4">
-                  Start a new accountability challenge with friends
-                </p>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                  Create New Challenge
-                </button>
-              </div>
-
-              <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center">
-                <h3 className="text-lg font-medium text-gray-700 mb-2">
-                  Join Challenge
-                </h3>
-                <p className="text-gray-500 text-sm mb-4">
-                  Have an invite code? Join an existing challenge
-                </p>
-                <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-                  Join with Code
-                </button>
-              </div>
-            </div>
-          </div>
+          <Routes>
+            <Route path="/" element={<ChallengeDashboard />} />
+            <Route path="/:id" element={<ChallengeDetail />} />
+            <Route path="/join/:inviteCode" element={<JoinChallengePage />} />
+          </Routes>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">
-              Please log in to access Challenge Tracker
-            </p>
-            <p className="text-gray-400 mt-2">
-              This microfrontend requires authentication
-            </p>
-          </div>
+          <UnauthenticatedView />
         )}
       </main>
-
-      <footer className="mt-6 text-center text-sm text-gray-500">
-        <p>Challenge Tracker - A Module Federation remote app</p>
-      </footer>
     </div>
   );
 }
