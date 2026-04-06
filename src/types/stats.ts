@@ -49,3 +49,46 @@ export interface AdminDashboard {
   recentActivity: RecentWorkout[];
   behindParticipants: BehindParticipant[];
 }
+
+export interface WeeklyParticipantProgress {
+  userId: string;
+  name?: string;
+  workoutDates: string[];
+  weeklyPenalty: number;
+}
+
+export interface WeeklyProgress {
+  weekNumber: number;
+  weekStart: string;
+  weekEnd: string;
+  daysRemaining: number;
+  minWorkoutsPerWeek: number;
+  penaltyAmount: number;
+  participants: WeeklyParticipantProgress[];
+  totalPenalty: number;
+}
+
+export interface WeekDebtEntry {
+  weekNumber: number;
+  weekStart: string;
+  weekEnd: string;
+  debt: number;
+  workoutsLogged: number;
+  workoutsRequired: number;
+}
+
+export interface ParticipantDebtSummary {
+  userId: string;
+  name?: string;
+  weeks: WeekDebtEntry[];
+  totalDebt: number;
+  totalWorkouts: number;
+}
+
+export interface AllWeeksDebt {
+  participants: ParticipantDebtSummary[];
+  weekHeaders: { weekNumber: number; weekStart: string; weekEnd: string }[];
+  grandTotal: number;
+  penaltyAmount: number;
+  minWorkoutsPerWeek: number;
+}

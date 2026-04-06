@@ -6,6 +6,7 @@ interface AdminAddWorkoutProps {
   challengeId: string;
   userId: string;
   userName: string;
+  initialDate?: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -14,10 +15,11 @@ export function AdminAddWorkout({
   challengeId,
   userId,
   userName,
+  initialDate,
   onSuccess,
   onCancel,
 }: AdminAddWorkoutProps) {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [note, setNote] = useState('');

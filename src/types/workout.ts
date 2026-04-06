@@ -11,7 +11,7 @@ export interface WorkoutLog {
 
 export interface CreateWorkoutData {
   date: string;
-  photoUrl: string;
+  photoUrl?: string;
   note?: string;
 }
 

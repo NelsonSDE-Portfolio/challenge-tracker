@@ -37,18 +37,18 @@ export function CreateChallengeForm({ onSuccess, onCancel }: CreateChallengeForm
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Create New Challenge</h2>
+    <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-lg p-6">
+      <h2 className="text-xl font-bold text-white mb-4">Create New Challenge</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+          <div className="p-3 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg text-sm">
             {error}
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-slate-300 mb-1">
             Challenge Name *
           </label>
           <input
@@ -58,20 +58,20 @@ export function CreateChallengeForm({ onSuccess, onCancel }: CreateChallengeForm
             maxLength={100}
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             placeholder="e.g., 30-Day Fitness Challenge"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-slate-300 mb-1">
             Description
           </label>
           <textarea
             maxLength={500}
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             rows={3}
             placeholder="What's this challenge about?"
           />
@@ -79,7 +79,7 @@ export function CreateChallengeForm({ onSuccess, onCancel }: CreateChallengeForm
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-300 mb-1">
               Workouts/Week *
             </label>
             <select
@@ -90,7 +90,7 @@ export function CreateChallengeForm({ onSuccess, onCancel }: CreateChallengeForm
                   rules: { ...formData.rules, minWorkoutsPerWeek: Number(e.target.value) },
                 })
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             >
               {[1, 2, 3, 4, 5, 6, 7].map((n) => (
                 <option key={n} value={n}>
@@ -101,11 +101,11 @@ export function CreateChallengeForm({ onSuccess, onCancel }: CreateChallengeForm
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-300 mb-1">
               Penalty Amount *
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
+              <span className="absolute left-3 top-2 text-slate-400">$</span>
               <input
                 type="number"
                 required
@@ -117,7 +117,7 @@ export function CreateChallengeForm({ onSuccess, onCancel }: CreateChallengeForm
                     rules: { ...formData.rules, penaltyAmount: Number(e.target.value) },
                   })
                 }
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-7 pr-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -125,7 +125,7 @@ export function CreateChallengeForm({ onSuccess, onCancel }: CreateChallengeForm
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-300 mb-1">
               Start Date *
             </label>
             <input
@@ -133,12 +133,12 @@ export function CreateChallengeForm({ onSuccess, onCancel }: CreateChallengeForm
               required
               value={formData.startDate}
               onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-300 mb-1">
               End Date *
             </label>
             <input
@@ -147,7 +147,7 @@ export function CreateChallengeForm({ onSuccess, onCancel }: CreateChallengeForm
               value={formData.endDate}
               min={formData.startDate}
               onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             />
           </div>
         </div>
@@ -156,14 +156,14 @@ export function CreateChallengeForm({ onSuccess, onCancel }: CreateChallengeForm
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+            className="flex-1 px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+            className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition disabled:opacity-50"
           >
             {loading ? 'Creating...' : 'Create Challenge'}
           </button>

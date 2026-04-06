@@ -1,5 +1,242 @@
+/* ============================================
+   CHALLENGE TRACKER - LIGHT MODE DESIGN SYSTEM
+   Inspired by Stakes & Strides
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+/* CSS Custom Properties - Design Tokens */
+:root {
+  /* Background Colors - Light blue-gray */
+  --background: 210 20% 96%;
+  --foreground: 220 30% 10%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 220 30% 10%;
+
+  /* Primary - Teal/Cyan */
+  --primary: 186 100% 38%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary - Purple */
+  --secondary: 270 60% 55%;
+  --secondary-foreground: 0 0% 100%;
+
+  /* Accent - Green */
+  --accent: 152 80% 38%;
+  --accent-foreground: 0 0% 100%;
+
+  /* Muted */
+  --muted: 210 15% 90%;
+  --muted-foreground: 215 15% 45%;
+
+  /* Destructive - Red */
+  --destructive: 4 80% 55%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Warning - Orange/Gold */
+  --warning: 40 100% 45%;
+  --warning-foreground: 220 30% 10%;
+
+  /* Border & Input */
+  --border: 214 20% 85%;
+  --input: 214 20% 85%;
+  --ring: 186 100% 38%;
+
+  /* Radius */
+  --radius: 0.75rem;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, hsl(186 100% 45%), hsl(152 80% 42%));
+  --gradient-secondary: linear-gradient(135deg, hsl(270 60% 55%), hsl(330 70% 55%));
+  --gradient-gold: linear-gradient(135deg, hsl(43 96% 56%), hsl(30 100% 50%));
+  --gradient-silver: linear-gradient(135deg, hsl(210 10% 70%), hsl(210 5% 50%));
+  --gradient-bronze: linear-gradient(135deg, hsl(25 60% 50%), hsl(15 70% 40%));
+
+  /* Glow Effects - Subtle for light mode */
+  --glow-primary: 0 0 20px hsl(186 100% 45% / 0.15);
+  --glow-accent: 0 0 20px hsl(152 80% 42% / 0.15);
+  --glow-secondary: 0 0 20px hsl(270 60% 55% / 0.15);
+
+  /* Glass Effect */
+  --glass-bg: hsl(0 0% 100% / 0.7);
+  --glass-border: hsl(214 20% 85% / 0.8);
+}
+
+/* Base Styles */
 .challenge-tracker {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.3);
+}
+
+/* Glassmorphism Card */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Gradient Text */
+.gradient-text-primary {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-secondary {
+  background: var(--gradient-secondary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient Border Effect */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--gradient-primary);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+.gradient-border:hover::before {
+  opacity: 1;
+}
+
+/* Glow Effects */
+.glow-primary {
+  box-shadow: var(--glow-primary);
+}
+.glow-accent {
+  box-shadow: var(--glow-accent);
+}
+.glow-secondary {
+  box-shadow: var(--glow-secondary);
+}
+
+/* Text Glow */
+.text-glow {
+  text-shadow: 0 0 20px hsl(186 100% 50% / 0.3);
+}
+
+/* Monospace Tabular Numbers */
+.font-mono-tab {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px hsl(186 100% 45% / 0.1); }
+  50% { box-shadow: 0 0 30px hsl(186 100% 45% / 0.25), 0 0 50px hsl(152 80% 42% / 0.1); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+.fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+/* Stagger Children Animation */
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-in-up 0.4s ease-out forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+
+/* Selection */
+::selection {
+  background: hsl(186 100% 45% / 0.2);
+  color: hsl(var(--foreground));
+}
+
+/* Focus Styles */
+*:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Shimmer Loading Effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(0 0% 100% / 0.5) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }

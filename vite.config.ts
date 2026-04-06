@@ -12,19 +12,19 @@ export default defineConfig({
       remotes: {
         // When running as a remote, we can optionally consume from host
         // This is primarily for standalone development
-        portfolioHost: 'http://localhost:5000/assets/remoteEntry.js',
+        portfolioHost: 'http://localhost:4000/assets/remoteEntry.js',
       },
       exposes: {
         './App': './src/App.tsx',
       },
-      shared: ['react', 'react-dom', 'react-router-dom', 'zustand'],
+      shared: ['react', 'react-dom', 'react-router-dom', 'zustand', '@clerk/clerk-react'],
     }),
   ],
   server: {
-    port: 5001,
+    port: 4001,
   },
   preview: {
-    port: 5001,
+    port: 4001,
   },
   build: {
     modulePreload: false,

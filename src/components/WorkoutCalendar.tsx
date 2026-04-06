@@ -2,11 +2,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { workoutService } from '../services/workoutService';
 import type { WorkoutLog } from '../types/workout';
 
+interface Participant {
+  userId: string;
+  name?: string;
+  email?: string;
+}
+
 interface WorkoutCalendarProps {
   challengeId: string;
   startDate: string;
   endDate: string;
   minWorkoutsPerWeek: number;
+  participants?: Participant[];
 }
 
 export function WorkoutCalendar({
@@ -14,20 +21,27 @@ export function WorkoutCalendar({
   startDate,
   endDate,
   minWorkoutsPerWeek,
+  participants = [],
 }: WorkoutCalendarProps) {
   const [workouts, setWorkouts] = useState<WorkoutLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutLog | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string>('me');
 
   useEffect(() => {
     loadWorkouts();
-  }, [challengeId]);
+  }, [challengeId, selectedUserId]);
 
   const loadWorkouts = async () => {
     try {
       setLoading(true);
-      const data = await workoutService.getMine(challengeId);
+      let data: WorkoutLog[];
+      if (selectedUserId === 'me') {
+        data = await workoutService.getMine(challengeId);
+      } else {
+        data = await workoutService.getByUser(challengeId, selectedUserId);
+      }
       setWorkouts(data);
     } catch (err) {
       console.error('Failed to load workouts:', err);
@@ -39,8 +53,11 @@ export function WorkoutCalendar({
   const workoutDates = useMemo(() => {
     const dates = new Set<string>();
     workouts.forEach((w) => {
-      const date = new Date(w.date).toISOString().split('T')[0];
-      dates.add(date);
+      const date = new Date(w.date);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      dates.add(`${year}-${month}-${day}`);
     });
     return dates;
   }, [workouts]);
@@ -48,8 +65,11 @@ export function WorkoutCalendar({
   const workoutsByDate = useMemo(() => {
     const map = new Map<string, WorkoutLog>();
     workouts.forEach((w) => {
-      const date = new Date(w.date).toISOString().split('T')[0];
-      map.set(date, w);
+      const date = new Date(w.date);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      map.set(`${year}-${month}-${day}`, w);
     });
     return map;
   }, [workouts]);
@@ -79,10 +99,17 @@ export function WorkoutCalendar({
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
+  const getLocalDateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const getDayClass = (dayDate: Date) => {
-    const dateStr = dayDate.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(dayDate);
     const hasWorkout = workoutDates.has(dateStr);
-    const isToday = dayDate.getTime() === today.getTime();
+    const isToday = getLocalDateString(dayDate) === getLocalDateString(today);
     const isPast = dayDate < today;
     const isInChallenge = dayDate >= challengeStart && dayDate <= challengeEnd;
 
@@ -104,7 +131,7 @@ export function WorkoutCalendar({
   };
 
   const handleDayClick = (dayDate: Date) => {
-    const dateStr = dayDate.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(dayDate);
     const workout = workoutsByDate.get(dateStr);
     if (workout) {
       setSelectedWorkout(workout);
@@ -121,7 +148,7 @@ export function WorkoutCalendar({
     for (let i = 0; i <= dayOfWeek; i++) {
       const date = new Date(weekStart);
       date.setDate(weekStart.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = getLocalDateString(date);
       if (workoutDates.has(dateStr)) {
         count++;
       }
@@ -129,6 +156,12 @@ export function WorkoutCalendar({
 
     return { count, required: minWorkoutsPerWeek };
   }, [workoutDates, minWorkoutsPerWeek]);
+
+  const getSelectedUserName = () => {
+    if (selectedUserId === 'me') return 'Your';
+    const participant = participants.find(p => p.userId === selectedUserId);
+    return participant?.name || participant?.email || "User's";
+  };
 
   if (loading) {
     return (
@@ -140,10 +173,33 @@ export function WorkoutCalendar({
 
   return (
     <div className="bg-white rounded-lg shadow p-4">
+      {/* User Selector */}
+      {participants.length > 0 && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            View calendar for:
+          </label>
+          <select
+            value={selectedUserId}
+            onChange={(e) => setSelectedUserId(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="me">Me</option>
+            {participants.map((p) => (
+              <option key={p.userId} value={p.userId}>
+                {p.name || p.email || 'Unknown User'}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Weekly Progress */}
       <div className="mb-4 p-3 bg-gray-50 rounded-lg">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-700">This Week</span>
+          <span className="text-sm font-medium text-gray-700">
+            {getSelectedUserName()} Week
+          </span>
           <span className="text-sm text-gray-500">
             {weeklyProgress.count}/{weeklyProgress.required} workouts
           </span>

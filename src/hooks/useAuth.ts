@@ -1,5 +1,5 @@
-// Hook to access auth from localStorage (shared with host)
-// The auth state is stored in localStorage by the host app and can be read by the remote
+// Hook to access Clerk auth state
+import { useUser } from '@clerk/clerk-react';
 
 interface User {
   id: string;
@@ -14,36 +14,25 @@ interface AuthState {
 }
 
 export function useAuth(): AuthState {
-  const token = localStorage.getItem('auth_token');
-  const userStr = localStorage.getItem('auth_user');
+  const { user: clerkUser, isSignedIn, isLoaded } = useUser();
 
-  let user: User | null = null;
-  if (userStr) {
-    try {
-      user = JSON.parse(userStr);
-    } catch {
-      user = null;
-    }
+  if (!isLoaded || !isSignedIn || !clerkUser) {
+    return {
+      user: null,
+      token: null,
+      isAuthenticated: false,
+    };
   }
+
+  const user: User = {
+    id: clerkUser.id,
+    email: clerkUser.emailAddresses[0]?.emailAddress || '',
+    name: clerkUser.firstName || clerkUser.fullName || undefined,
+  };
 
   return {
     user,
-    token,
-    isAuthenticated: !!token && !!user,
+    token: null, // Token is fetched async via ClerkAuthProvider
+    isAuthenticated: true,
   };
-}
-
-export function getAuthToken(): string | null {
-  return localStorage.getItem('auth_token');
-}
-
-export function getAuthUser(): User | null {
-  const userStr = localStorage.getItem('auth_user');
-  if (!userStr) return null;
-
-  try {
-    return JSON.parse(userStr);
-  } catch {
-    return null;
-  }
 }

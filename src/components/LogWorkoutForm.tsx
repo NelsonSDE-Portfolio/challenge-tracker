@@ -7,8 +7,16 @@ interface LogWorkoutFormProps {
   onCancel: () => void;
 }
 
+// Get local date string in YYYY-MM-DD format
+const getLocalDateString = (date: Date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export function LogWorkoutForm({ challengeId, onSuccess, onCancel }: LogWorkoutFormProps) {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getLocalDateString());
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -37,29 +45,33 @@ export function LogWorkoutForm({ challengeId, onSuccess, onCancel }: LogWorkoutF
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!photo) {
-      setError('Please select a photo as proof');
-      return;
-    }
-
     setError(null);
     setLoading(true);
     setUploadProgress(10);
 
     try {
-      // 1. Get presigned URL
-      const { uploadUrl, key } = await workoutService.getPresignedUrl(
-        challengeId,
-        photo.type,
-      );
-      setUploadProgress(30);
+      let photoUrl: string | undefined;
 
-      // 2. Upload photo to S3
-      await workoutService.uploadPhoto(uploadUrl, photo);
-      setUploadProgress(70);
+      // Upload photo if one was selected
+      if (photo) {
+        // 1. Get presigned URL
+        const { uploadUrl, key } = await workoutService.getPresignedUrl(
+          challengeId,
+          photo.type,
+        );
+        setUploadProgress(30);
 
-      // 3. Create workout log with photo URL
-      const photoUrl = workoutService.getPhotoUrl(key);
+        // 2. Upload photo to S3
+        await workoutService.uploadPhoto(uploadUrl, photo);
+        setUploadProgress(70);
+
+        // 3. Get photo URL
+        photoUrl = workoutService.getPhotoUrl(key);
+      } else {
+        setUploadProgress(50);
+      }
+
+      // Create workout log
       await workoutService.create(challengeId, {
         date,
         photoUrl,
@@ -95,14 +107,14 @@ export function LogWorkoutForm({ challengeId, onSuccess, onCancel }: LogWorkoutF
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
+            max={getLocalDateString()}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Proof Photo *
+            Proof Photo (optional)
           </label>
           <input
             ref={fileInputRef}
@@ -186,10 +198,10 @@ export function LogWorkoutForm({ challengeId, onSuccess, onCancel }: LogWorkoutF
           </button>
           <button
             type="submit"
-            disabled={loading || !photo}
+            disabled={loading}
             className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
           >
-            {loading ? 'Uploading...' : 'Log Workout'}
+            {loading ? 'Saving...' : 'Log Workout'}
           </button>
         </div>
       </form>

@@ -1,5 +1,5 @@
 import { api } from '../lib/api';
-import type { ChallengeStats, MyStats, ParticipantStats, AdminDashboard } from '../types/stats';
+import type { ChallengeStats, MyStats, ParticipantStats, AdminDashboard, WeeklyProgress, AllWeeksDebt } from '../types/stats';
 
 interface ChallengeStatsResponse {
   stats: ChallengeStats;
@@ -19,6 +19,14 @@ interface ParticipantStatsResponse {
 
 interface AdminDashboardResponse {
   dashboard: AdminDashboard;
+}
+
+interface WeeklyProgressResponse {
+  progress: WeeklyProgress;
+}
+
+interface AllWeeksDebtResponse {
+  debtData: AllWeeksDebt;
 }
 
 export const statsService = {
@@ -58,6 +66,21 @@ export const statsService = {
       `/challenges/${challengeId}/stats/admin`,
     );
     return response.data.dashboard;
+  },
+
+  async getWeeklyProgress(challengeId: string, weekOffset: number = 0): Promise<WeeklyProgress> {
+    const response = await api.get<WeeklyProgressResponse>(
+      `/challenges/${challengeId}/stats/weekly-progress`,
+      { params: { weekOffset } },
+    );
+    return response.data.progress;
+  },
+
+  async getAllWeeksDebt(challengeId: string): Promise<AllWeeksDebt> {
+    const response = await api.get<AllWeeksDebtResponse>(
+      `/challenges/${challengeId}/stats/all-weeks-debt`,
+    );
+    return response.data.debtData;
   },
 
   formatCurrency(amount: number): string {

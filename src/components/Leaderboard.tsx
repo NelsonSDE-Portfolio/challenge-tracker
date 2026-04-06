@@ -25,7 +25,9 @@ export function Leaderboard({
     try {
       setLoading(true);
       const data = await statsService.getLeaderboard(challengeId);
-      setLeaderboard(data);
+      // Sort by total workouts (most first) instead of debt
+      const sorted = [...data].sort((a, b) => b.totalWorkouts - a.totalWorkouts);
+      setLeaderboard(sorted);
       setError(null);
     } catch (err) {
       setError('Failed to load leaderboard');
@@ -42,10 +44,18 @@ export function Leaderboard({
     return `${index + 1}`;
   };
 
-  const getDebtClass = (debt: number) => {
-    if (debt === 0) return 'text-green-600';
-    if (debt < 50) return 'text-yellow-600';
-    return 'text-red-600';
+  const getParticipantColor = (index: number) => {
+    const colors = [
+      'bg-green-500',
+      'bg-blue-500',
+      'bg-orange-500',
+      'bg-purple-500',
+      'bg-red-500',
+      'bg-yellow-500',
+      'bg-pink-500',
+      'bg-cyan-500',
+    ];
+    return colors[index % colors.length];
   };
 
   if (loading) {
@@ -74,7 +84,7 @@ export function Leaderboard({
     <div className="bg-white rounded-lg shadow">
       <div className="p-4 border-b border-gray-100">
         <h2 className="font-semibold text-gray-800">Leaderboard</h2>
-        <p className="text-sm text-gray-500">Sorted by debt (highest first)</p>
+        <p className="text-sm text-gray-500">Ranked by total workout days</p>
       </div>
 
       <div className="divide-y divide-gray-100">
@@ -90,6 +100,12 @@ export function Leaderboard({
               {getRankEmoji(index)}
             </div>
 
+            <div
+              className={`w-10 h-10 rounded-full ${getParticipantColor(index)} flex items-center justify-center text-white font-bold flex-shrink-0`}
+            >
+              {(participant.name || participant.email || 'U')[0].toUpperCase()}
+            </div>
+
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p className="font-medium text-gray-800 truncate">
@@ -102,7 +118,6 @@ export function Leaderboard({
                 )}
               </div>
               <div className="flex gap-4 text-xs text-gray-500 mt-1">
-                <span>{participant.totalWorkouts} workouts</span>
                 <span>
                   {participant.weeklyWorkouts}/{minWorkoutsPerWeek} this week
                 </span>
@@ -115,12 +130,10 @@ export function Leaderboard({
             </div>
 
             <div className="text-right">
-              <p className={`font-bold text-lg ${getDebtClass(participant.debt)}`}>
-                {participant.debt === 0 ? '✓' : `$${participant.debt}`}
+              <p className="font-bold text-2xl text-blue-600">
+                {participant.totalWorkouts}
               </p>
-              {participant.debt === 0 && (
-                <p className="text-xs text-green-600">No debt!</p>
-              )}
+              <p className="text-xs text-gray-500">days trained</p>
             </div>
           </div>
         ))}

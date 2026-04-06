@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { getAuthToken } from '../hooks/useAuth';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
@@ -10,24 +9,35 @@ export const api = axios.create({
   },
 });
 
+// Token getter function - will be set by ClerkAuthProvider
+let getClerkToken: (() => Promise<string | null>) | null = null;
+
+export function setTokenGetter(getter: () => Promise<string | null>) {
+  getClerkToken = getter;
+}
+
 // Add auth token to requests
-api.interceptors.request.use((config) => {
-  const token = getAuthToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(async (config) => {
+  if (getClerkToken) {
+    try {
+      const token = await getClerkToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Failed to get auth token:', error);
+    }
   }
   return config;
 });
 
-// Handle 401 responses - redirect to host login
+// Handle 401 responses
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
-      // Redirect to host login page
-      window.location.href = '/login';
+      // Clerk handles redirect automatically
+      console.error('Unauthorized - please sign in');
     }
     return Promise.reject(error);
   }
