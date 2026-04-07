@@ -2,15 +2,16 @@
   command = "npm run build"
   publish = "dist"
 
-# CORS headers for Module Federation
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, OPTIONS"
-    Access-Control-Allow-Headers = "*"
+# Edge function for CORS headers
+[[edge_functions]]
+  path = "/assets/*"
+  function = "cors"
 
-# SPA fallback - force=false means only redirect if file doesn't exist
+[[edge_functions]]
+  path = "/*.js"
+  function = "cors"
+
+# SPA fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"
