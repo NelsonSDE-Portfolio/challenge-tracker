@@ -7,6 +7,7 @@ import { ChallengeDetail } from './components/ChallengeDetail';
 import { CreateChallengeForm } from './components/CreateChallengeForm';
 import { JoinChallengeForm } from './components/JoinChallengeForm';
 import { JoinChallengePage } from './pages/JoinChallengePage';
+import { LandingPage } from './pages/LandingPage';
 import './App.css';
 
 // Check if running inside portfolio (embedded via Module Federation)
@@ -54,32 +55,7 @@ function ChallengeDashboard() {
   };
 
   if (!isAuthenticated) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'hsl(var(--background))' }}
-      >
-        <div className="glass text-center p-8 rounded-2xl max-w-md mx-4 fade-in-up">
-          <div
-            className="w-20 h-20 mx-auto rounded-2xl flex items-center justify-center mb-6"
-            style={{ background: 'var(--gradient-secondary)' }}
-          >
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <h2
-            className="text-xl font-bold mb-2"
-            style={{ color: 'hsl(var(--foreground))' }}
-          >
-            Please Log In
-          </h2>
-          <p style={{ color: 'hsl(var(--muted-foreground))' }}>
-            You need to be logged in to access Challenge Tracker
-          </p>
-        </div>
-      </div>
-    );
+    return <LandingPage />;
   }
 
   return (
