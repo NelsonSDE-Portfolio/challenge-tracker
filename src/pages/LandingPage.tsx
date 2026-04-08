@@ -1,6 +1,9 @@
 import { SignInButton, SignUpButton } from '@clerk/clerk-react';
 import { BackToPortfolioButton } from '../components/BackToPortfolioButton';
 
+// After sign-in/sign-up, redirect back to the current page
+const getRedirectUrl = () => window.location.href;
+
 const features = [
   {
     icon: (
@@ -99,7 +102,7 @@ export function LandingPage() {
               </span>
             </div>
             <div className="flex items-center gap-4">
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" forceRedirectUrl={getRedirectUrl()}>
                 <button
                   className="px-4 py-2 text-sm font-medium rounded-lg transition"
                   style={{ color: 'hsl(var(--foreground))' }}
@@ -107,7 +110,7 @@ export function LandingPage() {
                   Log In
                 </button>
               </SignInButton>
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" forceRedirectUrl={getRedirectUrl()}>
                 <button
                   className="px-4 py-2 text-sm font-bold rounded-lg transition hover:opacity-90"
                   style={{ background: 'var(--gradient-primary)', color: 'white' }}
@@ -157,7 +160,7 @@ export function LandingPage() {
             </p>
 
             <div className="flex items-center justify-center gap-4 mb-12">
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" forceRedirectUrl={getRedirectUrl()}>
                 <button
                   className="px-8 py-4 text-lg font-bold rounded-xl transition hover:scale-105 hover:shadow-lg"
                   style={{ background: 'var(--gradient-primary)', color: 'white' }}
@@ -165,7 +168,7 @@ export function LandingPage() {
                   Start a Challenge
                 </button>
               </SignUpButton>
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" forceRedirectUrl={getRedirectUrl()}>
                 <button
                   className="px-8 py-4 text-lg font-medium rounded-xl transition hover:scale-105"
                   style={{
@@ -322,7 +325,7 @@ export function LandingPage() {
           >
             Join Challenge Tracker today and start your journey towards consistent fitness habits.
           </p>
-          <SignUpButton mode="modal">
+          <SignUpButton mode="modal" forceRedirectUrl={getRedirectUrl()}>
             <button
               className="px-8 py-4 text-lg font-bold rounded-xl transition hover:scale-105 hover:shadow-lg"
               style={{ background: 'var(--gradient-primary)', color: 'white' }}
