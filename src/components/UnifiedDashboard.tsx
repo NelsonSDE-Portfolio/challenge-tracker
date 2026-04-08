@@ -338,10 +338,6 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
             weekOffset={weekOffset}
             onWeekChange={setWeekOffset}
             isAdmin={challenge.isAdmin}
-            onAdminLogWorkout={(userId, userName, date) => {
-              // Will implement admin add workout inline
-              console.log('Admin log workout:', userId, userName, date);
-            }}
           />
         )}
 

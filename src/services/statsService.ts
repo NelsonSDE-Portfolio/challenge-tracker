@@ -13,10 +13,6 @@ interface LeaderboardResponse {
   leaderboard: ParticipantStats[];
 }
 
-interface ParticipantStatsResponse {
-  stats: ParticipantStats;
-}
-
 interface AdminDashboardResponse {
   dashboard: AdminDashboard;
 }
@@ -51,16 +47,6 @@ export const statsService = {
     return response.data.leaderboard;
   },
 
-  async getParticipantStats(
-    challengeId: string,
-    userId: string,
-  ): Promise<ParticipantStats> {
-    const response = await api.get<ParticipantStatsResponse>(
-      `/challenges/${challengeId}/stats/participants/${userId}`,
-    );
-    return response.data.stats;
-  },
-
   async getAdminDashboard(challengeId: string): Promise<AdminDashboard> {
     const response = await api.get<AdminDashboardResponse>(
       `/challenges/${challengeId}/stats/admin`,
@@ -81,15 +67,5 @@ export const statsService = {
       `/challenges/${challengeId}/stats/all-weeks-debt`,
     );
     return response.data.debtData;
-  },
-
-  formatCurrency(amount: number): string {
-    return `$${amount.toFixed(0)}`;
-  },
-
-  formatStreak(weeks: number): string {
-    if (weeks === 0) return 'No streak';
-    if (weeks === 1) return '1 week';
-    return `${weeks} weeks`;
   },
 };
