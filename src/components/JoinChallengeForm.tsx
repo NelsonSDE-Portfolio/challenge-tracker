@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import { challengeService } from '../services/challengeService';
 
 interface JoinChallengeFormProps {
@@ -20,19 +21,23 @@ export function JoinChallengeForm({ onSuccess, onCancel, initialCode = '' }: Joi
     try {
       const challenge = await challengeService.join(inviteCode.trim());
       onSuccess(challenge._id);
-    } catch (err: any) {
-      const message = err.response?.data?.message;
-      if (err.response?.status === 409) {
-        // Already a participant - redirect to challenge
-        try {
-          const data = await challengeService.getByInviteCode(inviteCode.trim());
-          onSuccess(data.challenge._id);
-          return;
-        } catch {
-          setError(message || 'You are already in this challenge');
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const message = err.response?.data?.message;
+        if (err.response?.status === 409) {
+          // Already a participant - redirect to challenge
+          try {
+            const data = await challengeService.getByInviteCode(inviteCode.trim());
+            onSuccess(data.challenge._id);
+            return;
+          } catch {
+            setError(message || 'You are already in this challenge');
+          }
+        } else {
+          setError(message || 'Failed to join challenge');
         }
       } else {
-        setError(message || 'Failed to join challenge');
+        setError('An unexpected error occurred');
       }
     } finally {
       setLoading(false);

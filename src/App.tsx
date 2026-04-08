@@ -8,35 +8,9 @@ import { CreateChallengeForm } from './components/CreateChallengeForm';
 import { JoinChallengeForm } from './components/JoinChallengeForm';
 import { JoinChallengePage } from './pages/JoinChallengePage';
 import { LandingPage } from './pages/LandingPage';
+import { isEmbedded, BackToPortfolioButton } from './components/BackToPortfolioButton';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
-
-// Check if running inside portfolio (embedded via Module Federation)
-const isEmbedded = () => {
-  try {
-    return window.location.pathname.includes('/projects/challenge-tracker');
-  } catch {
-    return false;
-  }
-};
-
-function BackToPortfolioButton() {
-  if (!isEmbedded()) return null;
-
-  return (
-    <a
-      href="/"
-      className="fixed top-4 left-4 z-50 flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition glass"
-      style={{
-        color: 'hsl(var(--muted-foreground))',
-      }}
-    >
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-      </svg>
-      Portfolio
-    </a>
-  );
-}
 
 function ChallengeDashboard() {
   const { user, isAuthenticated } = useAuth();
@@ -147,6 +121,7 @@ function App() {
   return (
     <ClerkAuthProvider>
       <div className="challenge-tracker">
+        <ErrorBoundary>
         <Routes>
           <Route path="/" element={<ChallengeDashboard />} />
           <Route
@@ -209,6 +184,7 @@ function App() {
             }
           />
         </Routes>
+        </ErrorBoundary>
       </div>
     </ClerkAuthProvider>
   );

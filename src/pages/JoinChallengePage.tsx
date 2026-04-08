@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import { challengeService } from '../services/challengeService';
 import type { Challenge } from '../types/challenge';
 
@@ -25,8 +26,12 @@ export function JoinChallengePage() {
       setChallenge(data.challenge);
       setIsAlreadyParticipant(data.isAlreadyParticipant);
       setError(null);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid invite code');
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Invalid invite code');
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }
@@ -39,14 +44,18 @@ export function JoinChallengePage() {
       setJoining(true);
       const joinedChallenge = await challengeService.join(inviteCode);
       navigate(`../${joinedChallenge._id}`);
-    } catch (err: any) {
-      if (err.response?.status === 409) {
-        // Already a participant
-        if (challenge) {
-          navigate(`../${challenge._id}`);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 409) {
+          // Already a participant
+          if (challenge) {
+            navigate(`../${challenge._id}`);
+          }
+        } else {
+          setError(err.response?.data?.message || 'Failed to join challenge');
         }
       } else {
-        setError(err.response?.data?.message || 'Failed to join challenge');
+        setError('An unexpected error occurred');
       }
     } finally {
       setJoining(false);

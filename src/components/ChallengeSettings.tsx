@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import { challengeService } from '../services/challengeService';
 import type { Challenge } from '../types/challenge';
 
@@ -55,8 +56,12 @@ export function ChallengeSettings({
       });
 
       onSuccess();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update settings');
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Failed to update settings');
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setSubmitting(false);
       setShowConfirm(false);

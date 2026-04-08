@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import { challengeService } from '../services/challengeService';
 import type { CreateChallengeData } from '../types/challenge';
 
@@ -29,8 +30,12 @@ export function CreateChallengeForm({ onSuccess, onCancel }: CreateChallengeForm
     try {
       const challenge = await challengeService.create(formData);
       onSuccess(challenge._id);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create challenge');
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Failed to create challenge');
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }
