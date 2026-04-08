@@ -72,15 +72,6 @@
   color: hsl(var(--foreground));
 }
 
-/* Hide scrollbar but keep functionality */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -113,13 +104,6 @@
   background-clip: text;
 }
 
-.gradient-text-secondary {
-  background: var(--gradient-secondary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 /* Gradient Border Effect */
 .gradient-border {
   position: relative;
@@ -143,21 +127,9 @@
 }
 
 /* Glow Effects */
-.glow-primary {
-  box-shadow: var(--glow-primary);
-}
 .glow-accent {
   box-shadow: var(--glow-accent);
 }
-.glow-secondary {
-  box-shadow: var(--glow-secondary);
-}
-
-/* Text Glow */
-.text-glow {
-  text-shadow: 0 0 20px hsl(186 100% 50% / 0.3);
-}
-
 /* Monospace Tabular Numbers */
 .font-mono-tab {
   font-family: 'JetBrains Mono', monospace;
@@ -185,11 +157,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
 }
 
 .animate-pulse-glow {
@@ -229,14 +196,3 @@
   outline-offset: 2px;
 }
 
-/* Shimmer Loading Effect */
-.shimmer {
-  background: linear-gradient(
-    90deg,
-    hsl(var(--muted)) 25%,
-    hsl(0 0% 100% / 0.5) 50%,
-    hsl(var(--muted)) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}

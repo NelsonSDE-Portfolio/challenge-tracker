@@ -3,24 +3,12 @@ import type {
   WorkoutLog,
   CreateWorkoutData,
   AdminCreateWorkoutData,
-  WorkoutStats,
   PresignedUrlResponse,
 } from '../types/workout';
-
-interface WorkoutsResponse {
-  workouts: WorkoutLog[];
-  count?: number;
-}
 
 interface WorkoutResponse {
   workout: WorkoutLog;
   message?: string;
-}
-
-interface StatsResponse {
-  totalWorkouts: number;
-  weeklyWorkouts: number;
-  weekStart: string;
 }
 
 export const workoutService = {
@@ -63,42 +51,6 @@ export const workoutService = {
     const response = await api.post<WorkoutResponse>(
       `/challenges/${challengeId}/workouts/admin`,
       data,
-    );
-    return response.data.workout;
-  },
-
-  async getAll(challengeId: string): Promise<WorkoutLog[]> {
-    const response = await api.get<WorkoutsResponse>(
-      `/challenges/${challengeId}/workouts`,
-    );
-    return response.data.workouts;
-  },
-
-  async getMine(challengeId: string): Promise<WorkoutLog[]> {
-    const response = await api.get<WorkoutsResponse>(
-      `/challenges/${challengeId}/workouts/mine`,
-    );
-    return response.data.workouts;
-  },
-
-  async getByUser(challengeId: string, userId: string): Promise<WorkoutLog[]> {
-    const response = await api.get<WorkoutsResponse>(
-      `/challenges/${challengeId}/workouts`,
-      { params: { userId } },
-    );
-    return response.data.workouts;
-  },
-
-  async getStats(challengeId: string): Promise<WorkoutStats> {
-    const response = await api.get<StatsResponse>(
-      `/challenges/${challengeId}/workouts/stats`,
-    );
-    return response.data;
-  },
-
-  async getById(challengeId: string, workoutId: string): Promise<WorkoutLog> {
-    const response = await api.get<WorkoutResponse>(
-      `/challenges/${challengeId}/workouts/${workoutId}`,
     );
     return response.data.workout;
   },

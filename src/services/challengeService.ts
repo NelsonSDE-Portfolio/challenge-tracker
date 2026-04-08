@@ -58,9 +58,4 @@ export const challengeService = {
     });
     return response.data.challenge;
   },
-
-  getInviteUrl(inviteCode: string): string {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/challenges/join/${inviteCode}`;
-  },
 };
