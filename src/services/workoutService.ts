@@ -55,11 +55,4 @@ export const workoutService = {
     return response.data.workout;
   },
 
-  getPhotoUrl(key: string): string {
-    // For development, use S3 public URL pattern
-    // In production, this would be a presigned read URL
-    const bucket = import.meta.env.VITE_S3_BUCKET || 'challenge-tracker-photos';
-    const region = import.meta.env.VITE_AWS_REGION || 'us-east-1';
-    return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
-  },
 };

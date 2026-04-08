@@ -84,7 +84,7 @@ export function HeroActionCard({
         setUploadProgress(30);
         await workoutService.uploadPhoto(uploadUrl, photo);
         setUploadProgress(70);
-        photoUrl = workoutService.getPhotoUrl(key);
+        photoUrl = key;  // Send the S3 key as photoUrl - backend will sign it on read
       } else {
         setUploadProgress(50);
       }
