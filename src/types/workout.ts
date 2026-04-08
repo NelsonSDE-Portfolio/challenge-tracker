@@ -37,5 +37,6 @@ export interface WorkoutStats {
 export interface PresignedUrlResponse {
   uploadUrl: string;
   key: string;
+  fileUrl: string;
   expiresIn: number;
 }
