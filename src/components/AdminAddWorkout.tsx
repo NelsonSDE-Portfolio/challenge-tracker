@@ -54,7 +54,7 @@ export function AdminAddWorkout({
           photo.type,
         );
         await workoutService.uploadPhoto(presignedResponse.uploadUrl, photo);
-        photoUrl = presignedResponse.fileUrl;
+        photoUrl = presignedResponse.key;
       }
 
       // Create admin workout entry
