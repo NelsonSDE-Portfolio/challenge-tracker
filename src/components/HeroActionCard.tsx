@@ -1,5 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import { workoutService } from '../services/workoutService';
+import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_LABEL } from '../constants';
 import type { MyStats, WeeklyProgress } from '../types/stats';
 
 interface HeroActionCardProps {
@@ -43,6 +45,14 @@ export function HeroActionCard({
   const dayOfWeek = today.getDay();
   const daysLeft = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
 
+  useEffect(() => {
+    return () => {
+      if (photoPreview) {
+        URL.revokeObjectURL(photoPreview);
+      }
+    };
+  }, [photoPreview]);
+
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -50,8 +60,8 @@ export function HeroActionCard({
         setError('Please select an image file');
         return;
       }
-      if (file.size > 10 * 1024 * 1024) {
-        setError('Image must be less than 10MB');
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        setError(`Image must be less than ${MAX_FILE_SIZE_LABEL}`);
         return;
       }
       setPhoto(file);
@@ -92,8 +102,12 @@ export function HeroActionCard({
       setNote('');
       setDate(getLocalDateString());
       onWorkoutLogged();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to log workout');
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Failed to log workout');
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
       setUploadProgress(0);

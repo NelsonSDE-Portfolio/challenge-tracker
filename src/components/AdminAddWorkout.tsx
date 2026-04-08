@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import axios from 'axios';
 import { workoutService } from '../services/workoutService';
-import { uploadService } from '../services/uploadService';
 
 interface AdminAddWorkoutProps {
   challengeId: string;
@@ -49,11 +49,11 @@ export function AdminAddWorkout({
 
       // Upload photo if provided
       if (photo) {
-        const presignedResponse = await uploadService.getPresignedUrl(
+        const presignedResponse = await workoutService.getPresignedUrl(
           challengeId,
           photo.type,
         );
-        await uploadService.uploadToS3(presignedResponse.uploadUrl, photo);
+        await workoutService.uploadPhoto(presignedResponse.uploadUrl, photo);
         photoUrl = presignedResponse.fileUrl;
       }
 
@@ -66,8 +66,12 @@ export function AdminAddWorkout({
       });
 
       onSuccess();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to add workout entry');
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Failed to add workout entry');
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setSubmitting(false);
     }

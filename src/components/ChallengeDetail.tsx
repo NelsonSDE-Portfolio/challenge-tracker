@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import axios from 'axios';
 import { challengeService } from '../services/challengeService';
 import { UnifiedDashboard } from './UnifiedDashboard';
 import type { Challenge } from '../types/challenge';
@@ -22,8 +23,12 @@ export function ChallengeDetail() {
       const data = await challengeService.getById(challengeId);
       setChallenge(data);
       setError(null);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load challenge');
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Failed to load challenge');
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }
