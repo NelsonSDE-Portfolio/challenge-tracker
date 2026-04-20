@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { UserButton } from '@clerk/clerk-react';
 import { statsService } from '../services/statsService';
+import { challengeService } from '../services/challengeService';
 import { HeroActionCard } from './HeroActionCard';
 import { QuickStatsBar } from './QuickStatsBar';
 import { CompactWeeklyGrid } from './CompactWeeklyGrid';
 import { DebtScoreboard } from './DebtScoreboard';
 import { AdminPanel } from './AdminPanel';
+import { SectionNav } from './SectionNav';
 import type { Challenge } from '../types/challenge';
 import type { ChallengeStats, MyStats, AllWeeksDebt, WeeklyProgress } from '../types/stats';
 
@@ -15,6 +18,7 @@ interface UnifiedDashboardProps {
 }
 
 export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashboardProps) {
+  const navigate = useNavigate();
   const [myStats, setMyStats] = useState<MyStats | null>(null);
   const [challengeStats, setChallengeStats] = useState<ChallengeStats | null>(null);
   const [allWeeksDebt, setAllWeeksDebt] = useState<AllWeeksDebt | null>(null);
@@ -22,9 +26,28 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
+  const [leaveDeleteData, setLeaveDeleteData] = useState(false);
+  const [leaveLoading, setLeaveLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
+
+  // Close modals and menus on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showOverflowMenu) setShowOverflowMenu(false);
+        else if (showInviteModal) setShowInviteModal(false);
+        else if (showLeaveModal) { setShowLeaveModal(false); setLeaveDeleteData(false); }
+        else if (showAdminPanel) setShowAdminPanel(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showOverflowMenu, showInviteModal, showLeaveModal, showAdminPanel]);
 
   useEffect(() => {
     loadAllData();
@@ -34,14 +57,14 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
     loadWeeklyProgress();
   }, [challenge._id, weekOffset]);
 
-  const loadAllData = async () => {
+  const loadAllData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const [stats, personal, debt, weekly] = await Promise.all([
         statsService.getChallengeStats(challenge._id),
         statsService.getMyStats(challenge._id),
         statsService.getAllWeeksDebt(challenge._id),
-        statsService.getWeeklyProgress(challenge._id, 0),
+        statsService.getWeeklyProgress(challenge._id, weekOffset),
       ]);
       setChallengeStats(stats);
       setMyStats(personal);
@@ -49,12 +72,15 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
       setWeeklyProgress(weekly);
       setError(null);
     } catch (err) {
-      setError('Failed to load dashboard data');
+      if (!silent) setError('Failed to load dashboard data');
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  // Silent refresh — no loading state, no re-mount
+  const refreshDataSilently = () => loadAllData(true);
 
   const loadWeeklyProgress = async () => {
     try {
@@ -77,6 +103,18 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleLeaveChallenge = async () => {
+    try {
+      setLeaveLoading(true);
+      await challengeService.leave(challenge._id, leaveDeleteData);
+      setShowLeaveModal(false);
+      navigate('..');
+    } catch (err) {
+      console.error('Failed to leave challenge:', err);
+      setLeaveLoading(false);
+    }
   };
 
   const getStatusBadge = (status: Challenge['status']) => {
@@ -181,7 +219,7 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
             Please try again or check your connection.
           </p>
           <button
-            onClick={loadAllData}
+            onClick={() => loadAllData()}
             className="px-6 py-3 rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105"
             style={{
               background: 'var(--gradient-primary)',
@@ -200,85 +238,145 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
       className="min-h-screen"
       style={{ background: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}
     >
-      {/* Ambient background glow (subtle for light mode) */}
-      <div
-        className="fixed top-0 left-0 w-96 h-96 rounded-full blur-[120px] pointer-events-none"
-        style={{ background: 'hsl(186 100% 50%)', opacity: 0.1 }}
-      />
-      <div
-        className="fixed bottom-0 right-0 w-96 h-96 rounded-full blur-[120px] pointer-events-none"
-        style={{ background: 'hsl(270 60% 55%)', opacity: 0.05 }}
-      />
-
-      {/* Header */}
-      <div
-        className="sticky top-0 z-30"
-        style={{
-          background: 'hsl(var(--background) / 0.8)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid hsl(var(--border))',
-        }}
-      >
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      {/* Header — consistent with dashboard */}
+      <header style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+        <div className="max-w-3xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <Link
               to=".."
-              className="flex items-center gap-2 transition-colors duration-300 group"
-              style={{ color: 'hsl(var(--muted-foreground))' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = 'hsl(var(--foreground))';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'hsl(var(--muted-foreground))';
-              }}
+              className="flex items-center gap-2 group py-2 px-3 -ml-3 rounded-lg transition-colors"
+              style={{ color: 'hsl(var(--foreground))' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'hsl(var(--muted))'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
               <svg
-                className="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1"
+                className="w-5 h-5 transition-transform duration-150 group-hover:-translate-x-1"
                 fill="none"
                 stroke="currentColor"
+                strokeWidth={2}
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
-              <span className="text-sm font-medium">Back</span>
+              <span className="text-sm font-semibold">Challenges</span>
             </Link>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {getStatusBadge(challenge.status)}
-              {challenge.isAdmin && (
-                <>
-                  <button
-                    onClick={() => setShowInviteModal(true)}
-                    className="px-4 py-2 text-sm font-medium rounded-xl transition-all duration-300 hover:scale-105"
-                    style={{
-                      background: 'hsl(var(--primary) / 0.1)',
-                      color: 'hsl(var(--primary))',
-                      border: '1px solid hsl(var(--primary) / 0.2)',
-                    }}
-                  >
-                    Invite
-                  </button>
-                  <button
-                    onClick={() => setShowAdminPanel(!showAdminPanel)}
-                    className="p-2 rounded-xl transition-all duration-300"
-                    style={{
-                      background: 'hsl(var(--muted))',
-                      color: 'hsl(var(--muted-foreground))',
-                    }}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </button>
-                </>
-              )}
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: 'w-9 h-9',
+                  },
+                }}
+              />
+              {/* Overflow menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+                  aria-label="More options"
+                  className="btn-press w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                  style={{
+                    background: showOverflowMenu ? 'hsl(var(--muted))' : 'transparent',
+                    color: 'hsl(var(--muted-foreground))',
+                  }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01" />
+                  </svg>
+                </button>
+
+                {showOverflowMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowOverflowMenu(false)}
+                    />
+                    <div
+                      className="absolute right-0 top-full mt-2 w-48 z-50 py-1 rounded-xl shadow-lg fade-in-up"
+                      style={{
+                        background: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                      }}
+                    >
+                      {challenge.isAdmin && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setShowOverflowMenu(false);
+                              setShowInviteModal(true);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm font-medium flex items-center gap-3 transition-colors"
+                            style={{ color: 'hsl(var(--foreground))' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'hsl(var(--muted))'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" style={{ color: 'hsl(var(--primary))' }}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                            Invite Friends
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowOverflowMenu(false);
+                              if (adminMode) {
+                                setAdminMode(false);
+                                setShowAdminPanel(false);
+                              } else {
+                                setAdminMode(true);
+                              }
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm font-medium flex items-center gap-3 transition-colors"
+                            style={{ color: adminMode ? 'hsl(var(--primary))' : 'hsl(var(--foreground))' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'hsl(var(--muted))'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" style={{ color: adminMode ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            {adminMode ? 'Exit Admin Mode' : 'Admin Mode'}
+                          </button>
+                          <div
+                            className="my-1"
+                            style={{ borderTop: '1px solid hsl(var(--border))' }}
+                          />
+                        </>
+                      )}
+                      <button
+                        onClick={() => {
+                          setShowOverflowMenu(false);
+                          setShowLeaveModal(true);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-sm font-medium flex items-center gap-3 transition-colors"
+                        style={{ color: 'hsl(var(--destructive))' }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'hsl(var(--destructive) / 0.05)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Leave Challenge
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </header>
+
+      {/* Section Navigation */}
+      <SectionNav
+        sections={[
+          { id: 'section-overview', label: 'Overview' },
+          { id: 'section-schedule', label: 'Schedule' },
+          { id: 'section-leaderboard', label: 'Leaderboard' },
+        ]}
+      />
 
       {/* Main Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
         {/* Challenge Title */}
         <div className="text-center fade-in-up">
           <h1
@@ -311,49 +409,185 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
           </div>
         </div>
 
-        {/* Hero Action Card - Log Workout */}
-        {challenge.status === 'active' && myStats && weeklyProgress && (
-          <HeroActionCard
-            challengeId={challenge._id}
-            myStats={myStats}
-            minWorkoutsPerWeek={challenge.rules.minWorkoutsPerWeek}
-            weeklyProgress={weeklyProgress}
-            onWorkoutLogged={handleWorkoutLogged}
-          />
-        )}
+        {/* Overview Section */}
+        <div id="section-overview">
+          {/* Hero Action Card - Log Workout */}
+          {challenge.status === 'active' && myStats && weeklyProgress && (
+            <HeroActionCard
+              challengeId={challenge._id}
+              myStats={myStats}
+              minWorkoutsPerWeek={challenge.rules.minWorkoutsPerWeek}
+              weeklyProgress={weeklyProgress}
+              onWorkoutLogged={handleWorkoutLogged}
+            />
+          )}
 
-        {/* Quick Stats Bar */}
-        {myStats && challengeStats && (
-          <QuickStatsBar
-            myStats={myStats}
-            challengeStats={challengeStats}
-          />
-        )}
+          {/* Quick Stats Bar */}
+          {myStats && challengeStats && (
+            <div className="mt-6">
+              <QuickStatsBar
+                myStats={myStats}
+                challengeStats={challengeStats}
+              />
+            </div>
+          )}
+        </div>
 
-        {/* Weekly Progress Grid */}
-        {weeklyProgress && (
-          <CompactWeeklyGrid
-            progress={weeklyProgress}
-            challengeStartDate={challenge.startDate}
-            weekOffset={weekOffset}
-            onWeekChange={setWeekOffset}
-            isAdmin={challenge.isAdmin}
-          />
-        )}
+        {/* Schedule Section */}
+        <div id="section-schedule">
+          {weeklyProgress && (
+            <CompactWeeklyGrid
+              progress={weeklyProgress}
+              challengeId={challenge._id}
+              challengeStartDate={challenge.startDate}
+              weekOffset={weekOffset}
+              onWeekChange={setWeekOffset}
+              onDataChange={refreshDataSilently}
+              isAdmin={adminMode}
+            />
+          )}
+        </div>
 
-        {/* Debt Scoreboard */}
-        {allWeeksDebt && (
-          <DebtScoreboard allWeeksDebt={allWeeksDebt} />
+        {/* Leaderboard Section */}
+        <div id="section-leaderboard">
+          {allWeeksDebt && (
+            <DebtScoreboard allWeeksDebt={allWeeksDebt} />
+          )}
+        </div>
+
+        {/* Admin Tools — only in admin mode */}
+        {adminMode && (
+          <div className="card p-4 fade-in-up">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+                  Admin Tools
+                </p>
+                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  Manage participants, settings, and data
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAdminPanel(true)}
+                className="btn-press px-4 py-2 text-xs font-bold text-white"
+                style={{
+                  background: 'var(--gradient-primary)',
+                  borderRadius: 'var(--radius)',
+                }}
+              >
+                Open Panel
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Admin Panel Slide-out */}
-      {showAdminPanel && challenge.isAdmin && (
+      {showAdminPanel && adminMode && (
         <AdminPanel
           challenge={challenge}
           onClose={() => setShowAdminPanel(false)}
           onChallengeUpdate={onChallengeUpdate}
         />
+      )}
+
+      {/* Leave Challenge Modal */}
+      {showLeaveModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ background: 'hsl(var(--foreground) / 0.5)', backdropFilter: 'blur(8px)' }}
+          onClick={() => setShowLeaveModal(false)}
+        >
+          <div
+            className="glass rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 fade-in-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{
+                  background: 'hsl(var(--destructive) / 0.1)',
+                  border: '1px solid hsl(var(--destructive) / 0.2)',
+                }}
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  style={{ color: 'hsl(var(--destructive))' }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </div>
+              <div>
+                <h3
+                  className="text-xl font-bold"
+                  style={{ color: 'hsl(var(--foreground))' }}
+                >
+                  Leave Challenge
+                </h3>
+                <p
+                  className="text-sm"
+                  style={{ color: 'hsl(var(--muted-foreground))' }}
+                >
+                  Are you sure you want to leave this challenge?
+                </p>
+              </div>
+            </div>
+
+            <label
+              className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors"
+              style={{
+                background: 'hsl(var(--muted))',
+                border: '1px solid hsl(var(--border))',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={leaveDeleteData}
+                onChange={(e) => setLeaveDeleteData(e.target.checked)}
+                className="w-4 h-4 rounded"
+              />
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>
+                  Delete my workout data
+                </p>
+                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  Remove all your logged workouts from this challenge
+                </p>
+              </div>
+            </label>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowLeaveModal(false);
+                  setLeaveDeleteData(false);
+                }}
+                className="flex-1 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300"
+                style={{
+                  background: 'hsl(var(--muted))',
+                  color: 'hsl(var(--muted-foreground))',
+                }}
+                disabled={leaveLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLeaveChallenge}
+                disabled={leaveLoading}
+                className="flex-1 px-4 py-3 rounded-xl font-bold text-sm transition-all duration-300 hover:opacity-90 disabled:opacity-50"
+                style={{
+                  background: 'hsl(var(--destructive))',
+                  color: 'white',
+                }}
+              >
+                {leaveLoading ? 'Leaving...' : 'Leave Challenge'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Invite Modal */}

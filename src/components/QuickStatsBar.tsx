@@ -6,34 +6,11 @@ interface QuickStatsBarProps {
 }
 
 export function QuickStatsBar({ myStats, challengeStats }: QuickStatsBarProps) {
+  // Ordered by urgency: Debt → Streak → Workouts → Week
   const stats = [
     {
-      label: 'Week',
-      value: challengeStats.currentWeek,
-      total: challengeStats.totalWeeks,
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      ),
-      gradient: 'var(--gradient-primary)',
-      type: 'default',
-    },
-    {
-      label: 'Streak',
-      value: myStats.currentStreak,
-      suffix: myStats.currentStreak > 0 ? '🔥' : '',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      ),
-      gradient: myStats.currentStreak > 0 ? 'var(--gradient-gold)' : undefined,
-      type: myStats.currentStreak === 0 ? 'muted' : 'default',
-    },
-    {
       label: 'Your Debt',
-      value: myStats.debt === 0 ? '$0 ✓' : `$${myStats.debt}`,
+      value: myStats.debt === 0 ? '$0 \u2713' : `$${myStats.debt}`,
       icon: myStats.debt === 0 ? (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -43,8 +20,20 @@ export function QuickStatsBar({ myStats, challengeStats }: QuickStatsBarProps) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       ),
-      gradient: myStats.debt === 0 ? 'var(--gradient-primary)' : undefined,
+      gradient: myStats.debt === 0 ? 'var(--gradient-secondary)' : 'linear-gradient(135deg, hsl(40 100% 50%), hsl(30 100% 50%))',
       type: myStats.debt > 0 ? 'danger' : 'default',
+    },
+    {
+      label: 'Streak',
+      value: myStats.currentStreak,
+      suffix: myStats.currentStreak > 0 ? '\uD83D\uDD25' : '',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      ),
+      gradient: myStats.currentStreak > 0 ? 'var(--gradient-gold)' : undefined,
+      type: myStats.currentStreak === 0 ? 'muted' : 'default',
     },
     {
       label: 'Workouts',
@@ -56,6 +45,18 @@ export function QuickStatsBar({ myStats, challengeStats }: QuickStatsBarProps) {
         </svg>
       ),
       gradient: 'var(--gradient-secondary)',
+      type: 'default',
+    },
+    {
+      label: 'Week',
+      value: challengeStats.currentWeek,
+      total: challengeStats.totalWeeks,
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      ),
+      gradient: 'var(--gradient-primary)',
       type: 'default',
     },
   ];

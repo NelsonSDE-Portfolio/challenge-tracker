@@ -11,16 +11,27 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 export function useAuth(): AuthState {
   const { user: clerkUser, isSignedIn, isLoaded } = useUser();
 
-  if (!isLoaded || !isSignedIn || !clerkUser) {
+  if (!isLoaded) {
     return {
       user: null,
       token: null,
       isAuthenticated: false,
+      isLoading: true,
+    };
+  }
+
+  if (!isSignedIn || !clerkUser) {
+    return {
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
     };
   }
 
@@ -34,5 +45,6 @@ export function useAuth(): AuthState {
     user,
     token: null, // Token is fetched async via ClerkAuthProvider
     isAuthenticated: true,
+    isLoading: false,
   };
 }

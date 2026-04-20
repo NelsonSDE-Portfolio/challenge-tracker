@@ -1,66 +1,58 @@
 /* ============================================
-   CHALLENGE TRACKER - LIGHT MODE DESIGN SYSTEM
-   Inspired by Stakes & Strides
+   CHALLENGE TRACKER - DESIGN SYSTEM
+   Energy: precise, powerful, in motion
+   Arc: anticipation → effort → reward
    ============================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
 
 /* CSS Custom Properties - Design Tokens */
 :root {
-  /* Background Colors - Light blue-gray */
-  --background: 210 20% 96%;
-  --foreground: 220 30% 10%;
+  /* Background - Clean gray #F5F5F5 */
+  --background: 0 0% 96%;
+  --foreground: 234 45% 14%;  /* Night blue #1A1A2E */
 
   --card: 0 0% 100%;
-  --card-foreground: 220 30% 10%;
+  --card-foreground: 234 45% 14%;
 
-  /* Primary - Teal/Cyan */
-  --primary: 186 100% 38%;
+  /* Primary - Orange energy #FF6B35 */
+  --primary: 16 100% 60%;
   --primary-foreground: 0 0% 100%;
 
-  /* Secondary - Purple */
-  --secondary: 270 60% 55%;
+  /* Secondary - Teal recovery #00C49A */
+  --secondary: 164 100% 39%;
   --secondary-foreground: 0 0% 100%;
 
-  /* Accent - Green */
-  --accent: 152 80% 38%;
+  /* Accent - Achievement green #1DB954 */
+  --accent: 141 73% 42%;
   --accent-foreground: 0 0% 100%;
 
   /* Muted */
-  --muted: 210 15% 90%;
-  --muted-foreground: 215 15% 45%;
+  --muted: 0 0% 91%;
+  --muted-foreground: 234 12% 40%;
 
-  /* Destructive - Red */
-  --destructive: 4 80% 55%;
+  /* Destructive / Streak red #FF3B30 */
+  --destructive: 3 100% 59%;
   --destructive-foreground: 0 0% 100%;
 
-  /* Warning - Orange/Gold */
-  --warning: 40 100% 45%;
-  --warning-foreground: 220 30% 10%;
+  /* Warning */
+  --warning: 30 100% 50%;
+  --warning-foreground: 234 45% 14%;
 
-  /* Border & Input */
-  --border: 214 20% 85%;
-  --input: 214 20% 85%;
-  --ring: 186 100% 38%;
+  /* Border & Input - Subtle, structural */
+  --border: 0 0% 86%;
+  --input: 0 0% 86%;
+  --ring: 16 100% 60%;
 
-  /* Radius */
-  --radius: 0.75rem;
+  /* Radius - Sharp, not soft */
+  --radius: 6px;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, hsl(186 100% 45%), hsl(152 80% 42%));
-  --gradient-secondary: linear-gradient(135deg, hsl(270 60% 55%), hsl(330 70% 55%));
+  --gradient-primary: linear-gradient(135deg, #FF6B35, #FF3B30);
+  --gradient-secondary: linear-gradient(135deg, #00C49A, #1DB954);
   --gradient-gold: linear-gradient(135deg, hsl(43 96% 56%), hsl(30 100% 50%));
   --gradient-silver: linear-gradient(135deg, hsl(210 10% 70%), hsl(210 5% 50%));
   --gradient-bronze: linear-gradient(135deg, hsl(25 60% 50%), hsl(15 70% 40%));
-
-  /* Glow Effects - Subtle for light mode */
-  --glow-primary: 0 0 20px hsl(186 100% 45% / 0.15);
-  --glow-accent: 0 0 20px hsl(152 80% 42% / 0.15);
-  --glow-secondary: 0 0 20px hsl(270 60% 55% / 0.15);
-
-  /* Glass Effect */
-  --glass-bg: hsl(0 0% 100% / 0.7);
-  --glass-border: hsl(214 20% 85% / 0.8);
 }
 
 /* Base Styles */
@@ -72,31 +64,81 @@
   color: hsl(var(--foreground));
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
-}
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.3);
+/* Actionable elements — pointer cursor */
+.challenge-tracker button,
+.challenge-tracker a,
+.challenge-tracker select,
+.challenge-tracker label[for],
+.challenge-tracker [role="button"],
+.challenge-tracker input[type="checkbox"],
+.challenge-tracker input[type="radio"],
+.challenge-tracker input[type="file"] {
+  cursor: pointer;
 }
 
-/* Glassmorphism Card */
+/* Disabled elements — not actionable */
+.challenge-tracker button:disabled,
+.challenge-tracker [role="button"][aria-disabled="true"] {
+  cursor: default;
+}
+
+/* Scrollbar - Minimal */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.3); }
+
+/* ============================================
+   CARDS - Solid, grounded, no float
+   ============================================ */
+
+/* Structural card - 1px border, no shadow */
+.card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+}
+
+/* Glass card - subtle, for overlays only */
 .glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: hsl(0 0% 100% / 0.85);
+  border: 1px solid hsl(var(--border));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--radius);
 }
 
-/* Gradient Text */
+/* Accent left border card */
+.card-accent-left {
+  border-left: 3px solid hsl(var(--primary));
+}
+
+/* ============================================
+   BUTTONS - Confident press, no bounce
+   ============================================ */
+
+.btn-press {
+  transition: transform 120ms ease-out, opacity 120ms ease-out;
+}
+.btn-press:active {
+  transform: scale(0.96);
+}
+
+/* ============================================
+   SCOREBOARD NUMBERS
+   ============================================ */
+
+.stat-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ============================================
+   GRADIENT EFFECTS
+   ============================================ */
+
 .gradient-text-primary {
   background: var(--gradient-primary);
   -webkit-background-clip: text;
@@ -104,54 +146,21 @@
   background-clip: text;
 }
 
-/* Gradient Border Effect */
-.gradient-border {
-  position: relative;
-}
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: var(--gradient-primary);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  opacity: 0.5;
-  transition: opacity 0.3s ease;
-}
-.gradient-border:hover::before {
-  opacity: 1;
-}
+/* Left-border accent by category */
+.border-accent-primary { border-left: 3px solid #FF6B35; }
+.border-accent-streak { border-left: 3px solid #FF3B30; }
+.border-accent-success { border-left: 3px solid #1DB954; }
+.border-accent-recovery { border-left: 3px solid #00C49A; }
 
-/* Glow Effects */
-.glow-accent {
-  box-shadow: var(--glow-accent);
-}
-/* Monospace Tabular Numbers */
-.font-mono-tab {
-  font-family: 'JetBrains Mono', monospace;
-  font-variant-numeric: tabular-nums;
-}
+/* ============================================
+   ANIMATIONS - Mirror physical effort
+   ============================================ */
 
-/* Animations */
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px hsl(186 100% 45% / 0.1); }
-  50% { box-shadow: 0 0 30px hsl(186 100% 45% / 0.25), 0 0 50px hsl(152 80% 42% / 0.1); }
-}
-
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
+/* Fade in up - entry animation */
 @keyframes fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -159,40 +168,198 @@
   }
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-shift 3s ease infinite;
-}
-
 .fade-in-up {
-  animation: fade-in-up 0.5s ease-out forwards;
+  animation: fade-in-up 0.3s ease-out forwards;
 }
 
-/* Stagger Children Animation */
+/* Stagger children - metric reveals */
 .stagger-children > * {
   opacity: 0;
-  animation: fade-in-up 0.4s ease-out forwards;
+  animation: fade-in-up 0.3s ease-out forwards;
 }
 .stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
-.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
-.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
-.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
-.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
-.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.11s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.17s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.23s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.29s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.35s; }
 
-/* Selection */
+/* Skeleton shimmer - replaces spinners */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted) / 0.5) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+  border-radius: var(--radius);
+}
+
+/* Streak danger pulse - only when user hasn't logged today */
+@keyframes streak-danger {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(3 100% 59% / 0); }
+  50% { box-shadow: 0 0 12px 2px hsl(3 100% 59% / 0.25); }
+}
+
+.streak-danger {
+  animation: streak-danger 2s ease-in-out infinite;
+}
+
+/* Checkmark draw */
+@keyframes check-draw {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+
+.check-draw {
+  stroke-dasharray: 24;
+  animation: check-draw 150ms ease-out forwards;
+}
+
+/* Completion pulse */
+@keyframes completion-pulse {
+  0% { box-shadow: 0 0 0 0 hsl(141 73% 42% / 0.4); }
+  100% { box-shadow: 0 0 0 12px hsl(141 73% 42% / 0); }
+}
+
+.completion-pulse {
+  animation: completion-pulse 400ms ease-out;
+}
+
+/* Progress fill with overshoot */
+@keyframes progress-fill {
+  0% { width: 0%; }
+  80% { width: calc(var(--progress) + 2%); }
+  100% { width: var(--progress); }
+}
+
+/* ============================================
+   SELECTION & FOCUS
+   ============================================ */
+
 ::selection {
-  background: hsl(186 100% 45% / 0.2);
+  background: hsl(16 100% 60% / 0.2);
   color: hsl(var(--foreground));
 }
 
-/* Focus Styles */
 *:focus-visible {
   outline: 2px solid hsl(var(--primary));
   outline-offset: 2px;
 }
 
+/* ============================================
+   FAB - Floating Action Button
+   The heartbeat of the app
+   ============================================ */
+
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--gradient-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px hsl(16 100% 60% / 0.35);
+  transition: transform 120ms ease-out, box-shadow 200ms ease;
+  z-index: 40;
+}
+.fab:active {
+  transform: scale(0.92);
+}
+.fab:hover {
+  box-shadow: 0 6px 20px hsl(16 100% 60% / 0.45);
+}
+
+/* ============================================
+   SCROLL FADE INDICATOR
+   ============================================ */
+
+.scroll-fade-right {
+  position: relative;
+}
+
+.scroll-fade-right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40px;
+  background: linear-gradient(to right, transparent, hsl(var(--card)));
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 200ms;
+}
+
+.scroll-fade-right.scrolled-right::after {
+  opacity: 0;
+}
+
+/* ============================================
+   SECTION NAVIGATION
+   ============================================ */
+
+.section-nav {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: hsl(var(--background) / 0.9);
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* ============================================
+   ACCESSIBILITY - Reduced motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-up {
+    animation: none;
+    opacity: 1;
+  }
+
+  .stagger-children > * {
+    animation: none;
+    opacity: 1;
+  }
+
+  .skeleton {
+    animation: none;
+  }
+
+  .streak-danger {
+    animation: none;
+  }
+
+  .check-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .completion-pulse {
+    animation: none;
+  }
+
+  .btn-press:active {
+    transform: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

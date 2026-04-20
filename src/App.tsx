@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
+import { UserButton } from '@clerk/clerk-react';
 import { useAuth } from './hooks/useAuth';
 import { ClerkAuthProvider } from './components/ClerkAuthProvider';
 import { ChallengeList } from './components/ChallengeList';
@@ -13,7 +14,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
 
 function ChallengeDashboard() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const navigate = useNavigate();
@@ -28,79 +29,109 @@ function ChallengeDashboard() {
     navigate(challengeId);
   };
 
+  if (isLoading) {
+    return (
+      <div
+        className="min-h-screen"
+        style={{ background: 'hsl(var(--background))' }}
+      >
+        <div style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+          <div className="max-w-3xl mx-auto px-6 py-6">
+            <div className="skeleton h-5 w-48 mb-2" />
+            <div className="skeleton h-7 w-36" />
+          </div>
+        </div>
+        <div className="max-w-3xl mx-auto px-6 py-6 space-y-3">
+          <div className="skeleton h-20 w-full" />
+          <div className="skeleton h-20 w-full" />
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return <LandingPage />;
   }
+
+  const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
 
   return (
     <div
       className="min-h-screen"
       style={{ background: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}
     >
-      {/* Ambient background glow (subtle for light mode) */}
-      <div
-        className="fixed top-0 left-0 w-96 h-96 rounded-full blur-[120px] pointer-events-none"
-        style={{ background: 'hsl(186 100% 50%)', opacity: 0.1 }}
-      />
-      <div
-        className="fixed bottom-0 right-0 w-96 h-96 rounded-full blur-[120px] pointer-events-none"
-        style={{ background: 'hsl(270 60% 55%)', opacity: 0.05 }}
-      />
-
       <BackToPortfolioButton />
 
-      {/* Header */}
+      {/* Header — motivational statement, not just a title */}
       <header
-        className="relative"
         style={{ borderBottom: '1px solid hsl(var(--border))' }}
       >
-        <div className="max-w-4xl mx-auto px-6 py-8" style={{ paddingLeft: isEmbedded() ? '6rem' : undefined }}>
-          <div className="flex items-center gap-4 mb-2">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ background: 'var(--gradient-primary)' }}
-            >
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-              </svg>
-            </div>
+        <div
+          className="max-w-3xl mx-auto px-6 py-6"
+          style={{ paddingLeft: isEmbedded() ? '6rem' : undefined }}
+        >
+          <div className="flex items-center justify-between">
             <div>
-              <h1
-                className="text-3xl font-black"
-                style={{ color: 'hsl(var(--foreground))' }}
-              >
-                Challenge Tracker
-              </h1>
-              <p
-                className="text-sm"
+              <a
+                href={import.meta.env.VITE_PORTFOLIO_URL || 'https://nelsonriera.com'}
+                className="inline-flex items-center gap-1 text-xs font-medium mb-2 group"
                 style={{ color: 'hsl(var(--muted-foreground))' }}
               >
-                Track your accountability challenges
+                <svg className="w-3 h-3 transition-transform duration-150 group-hover:-translate-x-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Portfolio
+              </a>
+              <p
+                className="text-sm font-medium mb-1"
+                style={{ color: 'hsl(var(--muted-foreground))' }}
+              >
+                {greeting()}, <span style={{ color: 'hsl(var(--foreground))' }}>{user?.name || user?.email}</span>
               </p>
+              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+                Your Challenges
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 flex items-center justify-center"
+                style={{
+                  background: 'var(--gradient-primary)',
+                  borderRadius: 'var(--radius)',
+                }}
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: 'w-9 h-9',
+                  },
+                }}
+              />
             </div>
           </div>
-          {user && (
-            <p
-              className="text-sm mt-4"
-              style={{ color: 'hsl(var(--muted-foreground))' }}
-            >
-              Logged in as <span style={{ color: 'hsl(var(--foreground))' }}>{user.name || user.email}</span>
-            </p>
-          )}
         </div>
       </header>
 
       {/* Content */}
-      <main className="relative z-10 max-w-4xl mx-auto px-6 py-8">
+      <main className="max-w-3xl mx-auto px-6 py-6">
         {showCreate ? (
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto fade-in-up">
             <CreateChallengeForm
               onSuccess={handleCreateSuccess}
               onCancel={() => setShowCreate(false)}
             />
           </div>
         ) : showJoin ? (
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto fade-in-up">
             <JoinChallengeForm
               onSuccess={handleJoinSuccess}
               onCancel={() => setShowJoin(false)}
@@ -140,44 +171,36 @@ function App() {
                 className="min-h-screen"
                 style={{ background: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}
               >
-                {/* Ambient background glow */}
-                <div
-                  className="fixed top-0 left-0 w-96 h-96 rounded-full blur-[120px] pointer-events-none"
-                  style={{ background: 'hsl(270 60% 55%)', opacity: 0.1 }}
-                />
                 <BackToPortfolioButton />
-                <header
-                  className="relative"
-                  style={{ borderBottom: '1px solid hsl(var(--border))' }}
-                >
-                  <div className="max-w-4xl mx-auto px-6 py-8" style={{ paddingLeft: isEmbedded() ? '6rem' : undefined }}>
-                    <div className="flex items-center gap-4">
+                <header style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                  <div
+                    className="max-w-3xl mx-auto px-6 py-6"
+                    style={{ paddingLeft: isEmbedded() ? '6rem' : undefined }}
+                  >
+                    <div className="flex items-center gap-3">
                       <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center"
-                        style={{ background: 'var(--gradient-secondary)' }}
+                        className="w-10 h-10 flex items-center justify-center"
+                        style={{
+                          background: 'var(--gradient-secondary)',
+                          borderRadius: 'var(--radius)',
+                        }}
                       >
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
                       </div>
                       <div>
-                        <h1
-                          className="text-3xl font-black"
-                          style={{ color: 'hsl(var(--foreground))' }}
-                        >
+                        <h1 className="text-xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
                           Join Challenge
                         </h1>
-                        <p
-                          className="text-sm"
-                          style={{ color: 'hsl(var(--muted-foreground))' }}
-                        >
-                          You've been invited!
+                        <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                          You've been invited
                         </p>
                       </div>
                     </div>
                   </div>
                 </header>
-                <main className="relative z-10 max-w-4xl mx-auto px-6 py-8">
+                <main className="max-w-3xl mx-auto px-6 py-6">
                   <JoinChallengePage />
                 </main>
               </div>

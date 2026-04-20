@@ -1,3 +1,5 @@
+import { useState, useRef, useCallback } from 'react';
+import { workoutService } from '../services/workoutService';
 import type { WeeklyProgress } from '../types/stats';
 
 const getLocalDateString = (date: Date = new Date()) => {
@@ -9,29 +11,43 @@ const getLocalDateString = (date: Date = new Date()) => {
 
 interface CompactWeeklyGridProps {
   progress: WeeklyProgress;
+  challengeId: string;
   challengeStartDate: string;
   weekOffset: number;
   onWeekChange: (offset: number) => void;
+  onDataChange: () => void;
   isAdmin?: boolean;
-  onAdminLogWorkout?: (userId: string, userName: string, date: string) => void;
 }
 
 const avatarGradients = [
   'var(--gradient-primary)',
   'var(--gradient-secondary)',
   'var(--gradient-gold)',
-  'linear-gradient(135deg, hsl(186 100% 45%), hsl(270 60% 55%))',
-  'linear-gradient(135deg, hsl(330 70% 55%), hsl(4 80% 55%))',
+  'linear-gradient(135deg, #FF6B35, #00C49A)',
+  'linear-gradient(135deg, #FF3B30, #FF6B35)',
 ];
 
 export function CompactWeeklyGrid({
   progress,
+  challengeId,
   challengeStartDate,
   weekOffset,
   onWeekChange,
+  onDataChange,
   isAdmin = false,
-  onAdminLogWorkout,
 }: CompactWeeklyGridProps) {
+  // Track optimistic updates locally so the grid updates instantly
+  const [addedWorkouts, setAddedWorkouts] = useState<Set<string>>(new Set());
+  const [removedWorkouts, setRemovedWorkouts] = useState<Set<string>>(new Set());
+  const [scrolledRight, setScrolledRight] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setScrolledRight(el.scrollLeft + el.clientWidth >= el.scrollWidth - 10);
+  }, []);
+
   const getWeekDays = () => {
     const today = new Date();
     const dayOfWeek = today.getDay();
@@ -84,25 +100,156 @@ export function CompactWeeklyGrid({
     return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
   };
 
-  const hasWorkoutOnDay = (workoutDates: string[], dayDate: string) => {
-    return workoutDates.includes(dayDate);
+  const hasWorkoutOnDay = (userId: string, workoutDates: string[], dayDate: string) => {
+    const key = `${userId}:${dayDate}`;
+    if (removedWorkouts.has(key)) return false;
+    return workoutDates.includes(dayDate) || addedWorkouts.has(key);
   };
 
-  const handleDayCellClick = (
+  // Uncheck — admin removes a workout for one participant on a day
+  const handleUncheck = async (
+    participant: { userId: string },
+    day: { date: string },
+  ) => {
+    if (!isAdmin) return;
+    const key = `${participant.userId}:${day.date}`;
+    // Optimistic — remove checkmark immediately
+    setRemovedWorkouts((prev) => new Set(prev).add(key));
+    setAddedWorkouts((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+    try {
+      await workoutService.adminDeleteByDate(challengeId, participant.userId, day.date);
+      onDataChange();
+    } catch (err) {
+      console.error('Failed to uncheck workout:', err);
+      // Revert
+      setRemovedWorkouts((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
+
+  // Single cell click — admin logs workout for one participant
+  const handleCellClick = async (
     participant: { userId: string; name?: string },
     day: { date: string; isPast: boolean; isToday: boolean },
-    hasWorkout: boolean
+    hasWorkout: boolean,
   ) => {
-    if (!isAdmin || hasWorkout || !onAdminLogWorkout) return;
+    if (!isAdmin || hasWorkout) return;
     if (!day.isPast && !day.isToday) return;
-    onAdminLogWorkout(participant.userId, participant.name || 'Unknown', day.date);
+
+    const cellKey = `${participant.userId}:${day.date}`;
+    // Optimistic update — show checkmark immediately
+    setAddedWorkouts((prev) => new Set(prev).add(cellKey));
+    setRemovedWorkouts((prev) => {
+      const next = new Set(prev);
+      next.delete(cellKey);
+      return next;
+    });
+    try {
+      await workoutService.adminCreate(challengeId, {
+        userId: participant.userId,
+        date: day.date,
+        note: `Added by admin`,
+      });
+      // Silently refresh stats in background
+      onDataChange();
+    } catch (err) {
+      console.error('Failed to log workout:', err);
+      // Revert optimistic update on failure
+      setAddedWorkouts((prev) => {
+        const next = new Set(prev);
+        next.delete(cellKey);
+        return next;
+      });
+    }
+  };
+
+  // Bulk column click — admin logs workout for ALL missing participants on that day
+  const handleBulkCheckDay = async (dayDate: string) => {
+    if (!isAdmin) return;
+
+    const missingParticipants = progress.participants.filter(
+      (p) => !hasWorkoutOnDay(p.userId, p.workoutDates, dayDate),
+    );
+    if (missingParticipants.length === 0) return;
+
+    // Optimistic update — mark all as done immediately
+    const newKeys = missingParticipants.map((p) => `${p.userId}:${dayDate}`);
+    setAddedWorkouts((prev) => {
+      const next = new Set(prev);
+      newKeys.forEach((k) => next.add(k));
+      return next;
+    });
+    setRemovedWorkouts((prev) => {
+      const next = new Set(prev);
+      newKeys.forEach((k) => next.delete(k));
+      return next;
+    });
+
+    try {
+      await Promise.all(
+        missingParticipants.map((p) =>
+          workoutService.adminCreate(challengeId, {
+            userId: p.userId,
+            date: dayDate,
+            note: 'Checked by admin',
+          }),
+        ),
+      );
+      // Silently refresh stats in background
+      onDataChange();
+    } catch (err) {
+      console.error('Failed to bulk log workouts:', err);
+      // Revert optimistic update on failure
+      setAddedWorkouts((prev) => {
+        const next = new Set(prev);
+        newKeys.forEach((k) => next.delete(k));
+        return next;
+      });
+    }
   };
 
   const days = getWeekDays();
   const isCurrentWeek = weekOffset === 0;
 
+  // Calculate week number relative to challenge start (Week 1 = first week)
+  const getWeekNumber = () => {
+    const challengeStart = new Date(challengeStartDate);
+    challengeStart.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const viewedMonday = new Date(today);
+    viewedMonday.setDate(today.getDate() + mondayOffset + (weekOffset * 7));
+    viewedMonday.setHours(0, 0, 0, 0);
+
+    const startDay = challengeStart.getDay();
+    const startMondayOffset = startDay === 0 ? -6 : 1 - startDay;
+    const challengeMonday = new Date(challengeStart);
+    challengeMonday.setDate(challengeStart.getDate() + startMondayOffset);
+    challengeMonday.setHours(0, 0, 0, 0);
+
+    const diffMs = viewedMonday.getTime() - challengeMonday.getTime();
+    const diffWeeks = Math.round(diffMs / (7 * 24 * 60 * 60 * 1000));
+    return Math.max(1, diffWeeks + 1);
+  };
+
+  const weekNumber = getWeekNumber();
+
+  // Count how many participants are missing a workout on a given day
+  const getMissingCount = (dayDate: string) => {
+    return progress.participants.filter((p) => !hasWorkoutOnDay(p.userId, p.workoutDates, dayDate)).length;
+  };
+
   return (
-    <div className="glass rounded-2xl overflow-hidden fade-in-up">
+    <div className="card overflow-hidden fade-in-up">
       {/* Header */}
       <div
         className="flex items-center justify-between px-5 py-4"
@@ -111,34 +258,29 @@ export function CompactWeeklyGrid({
         <button
           onClick={() => canGoToPreviousWeek() && onWeekChange(weekOffset - 1)}
           disabled={!canGoToPreviousWeek()}
-          className="p-1.5 rounded-lg transition-colors"
+          aria-label="Previous week"
+          className="btn-press p-1.5"
           style={{
             color: canGoToPreviousWeek() ? 'hsl(var(--muted-foreground))' : 'hsl(var(--muted-foreground) / 0.3)',
-            background: canGoToPreviousWeek() ? undefined : 'transparent',
-          }}
-          onMouseEnter={(e) => {
-            if (canGoToPreviousWeek()) e.currentTarget.style.background = 'hsl(var(--muted))';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
+            borderRadius: 'var(--radius)',
           }}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>
-            {isCurrentWeek ? 'Weekly Progress' : `Week ${progress.weekNumber}`}
+            Week {weekNumber}{isCurrentWeek ? ' - Weekly Progress' : ''}
           </h2>
           {isCurrentWeek && (
             <span
-              className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+              className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
               style={{
-                background: 'hsl(var(--primary) / 0.2)',
+                background: 'hsl(var(--primary) / 0.15)',
                 color: 'hsl(var(--primary))',
-                border: '1px solid hsl(var(--primary) / 0.3)',
+                borderRadius: 'var(--radius)',
               }}
             >
               Live
@@ -149,19 +291,15 @@ export function CompactWeeklyGrid({
         <button
           onClick={() => weekOffset < 0 && onWeekChange(weekOffset + 1)}
           disabled={isCurrentWeek}
-          className="p-1.5 rounded-lg transition-colors"
+          aria-label="Next week"
+          className="btn-press p-1.5"
           style={{
             color: !isCurrentWeek ? 'hsl(var(--muted-foreground))' : 'hsl(var(--muted-foreground) / 0.3)',
-          }}
-          onMouseEnter={(e) => {
-            if (!isCurrentWeek) e.currentTarget.style.background = 'hsl(var(--muted))';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
+            borderRadius: 'var(--radius)',
           }}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </button>
       </div>
@@ -178,7 +316,11 @@ export function CompactWeeklyGrid({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className={`overflow-x-auto scroll-fade-right${scrolledRight ? ' scrolled-right' : ''}`}
+      >
         <table className="w-full min-w-[500px]">
           <thead>
             <tr>
@@ -188,21 +330,55 @@ export function CompactWeeklyGrid({
               >
                 Participant
               </th>
-              {days.map((day) => (
-                <th
-                  key={day.date}
-                  className="pb-3 pt-4 text-xs font-medium text-center w-12"
-                  style={{ color: day.isToday ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}
-                >
-                  {day.dayName}
-                  {day.isToday && (
-                    <div
-                      className="w-1 h-1 rounded-full mx-auto mt-1"
-                      style={{ background: 'hsl(var(--primary))' }}
-                    />
-                  )}
-                </th>
-              ))}
+              {days.map((day) => {
+                const isActionable = isAdmin && (day.isPast || day.isToday);
+                const missingCount = getMissingCount(day.date);
+                const allDone = missingCount === 0;
+
+                return (
+                  <th
+                    key={day.date}
+                    className={`pb-3 pt-4 text-xs font-medium text-center w-12 ${isActionable && !allDone ? 'group' : ''}`}
+                    style={{ color: day.isToday ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}
+                  >
+                    {isActionable && !allDone ? (
+                      <button
+                        onClick={() => handleBulkCheckDay(day.date)}
+                        className="btn-press w-full flex flex-col items-center gap-0.5 relative"
+                        title={`Check all ${missingCount} missing`}
+                      >
+                        <span>{day.dayName}</span>
+                        <div
+                          className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold"
+                          style={{
+                            background: 'hsl(var(--primary) / 0.15)',
+                            color: 'hsl(var(--primary))',
+                          }}
+                        >
+                          {missingCount}
+                        </div>
+                      </button>
+                    ) : (
+                      <>
+                        {day.dayName}
+                        {day.isToday && (
+                          <div
+                            className="w-1 h-1 rounded-full mx-auto mt-1"
+                            style={{ background: 'hsl(var(--primary))' }}
+                          />
+                        )}
+                        {isActionable && allDone && (
+                          <div className="flex justify-center mt-0.5">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24" style={{ color: 'hsl(var(--accent))' }}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </th>
+                );
+              })}
               <th
                 className="pb-3 pt-4 text-xs font-medium text-center px-3"
                 style={{ color: 'hsl(var(--muted-foreground))' }}
@@ -213,8 +389,8 @@ export function CompactWeeklyGrid({
           </thead>
           <tbody>
             {progress.participants.map((participant, index) => {
-              const weekDone = participant.workoutDates.filter((d) =>
-                days.some((day) => day.date === d)
+              const weekDone = days.filter((day) =>
+                hasWorkoutOnDay(participant.userId, participant.workoutDates, day.date)
               ).length;
 
               return (
@@ -245,36 +421,66 @@ export function CompactWeeklyGrid({
 
                   {/* Day Cells */}
                   {days.map((day) => {
-                    const hasWorkout = hasWorkoutOnDay(participant.workoutDates, day.date);
+                    const hasWorkout = hasWorkoutOnDay(participant.userId, participant.workoutDates, day.date);
                     const isFutureDay = !day.isPast && !day.isToday;
-                    const canAdminClick = isAdmin && !hasWorkout && (day.isPast || day.isToday);
+                    const canClick = isAdmin && !hasWorkout && (day.isPast || day.isToday);
+
+                    const canUncheck = isAdmin && hasWorkout && (day.isPast || day.isToday);
 
                     return (
                       <td key={day.date} className="py-3 text-center">
                         {hasWorkout ? (
-                          <div
-                            className="w-7 h-7 rounded-full mx-auto flex items-center justify-center glow-accent"
-                            style={{ background: 'hsl(var(--accent) / 0.2)' }}
-                          >
-                            <svg
-                              className="w-3.5 h-3.5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              style={{ color: 'hsl(var(--accent))' }}
-                              strokeWidth={3}
+                          canUncheck ? (
+                            <button
+                              onClick={() => handleUncheck(participant, day)}
+                              className="btn-press w-7 h-7 rounded-full mx-auto flex items-center justify-center transition-all group/cell"
+                              style={{ background: 'hsl(var(--accent) / 0.15)' }}
+                              title="Click to uncheck"
                             >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          </div>
+                              <svg
+                                className="w-3.5 h-3.5 group-hover/cell:hidden"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                style={{ color: 'hsl(var(--accent))' }}
+                                strokeWidth={3}
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                              <svg
+                                className="w-3.5 h-3.5 hidden group-hover/cell:block"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                style={{ color: 'hsl(var(--destructive))' }}
+                                strokeWidth={2}
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          ) : (
+                            <div
+                              className="w-7 h-7 rounded-full mx-auto flex items-center justify-center"
+                              style={{ background: 'hsl(var(--accent) / 0.15)' }}
+                            >
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                style={{ color: 'hsl(var(--accent))' }}
+                                strokeWidth={3}
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          )
                         ) : day.isToday ? (
                           <button
-                            onClick={() => canAdminClick && handleDayCellClick(participant, day, hasWorkout)}
-                            className="w-7 h-7 rounded-full mx-auto border-2 border-dashed transition-all"
-                            style={{
-                              borderColor: 'hsl(var(--primary) / 0.4)',
-                            }}
-                            disabled={!canAdminClick}
+                            onClick={() => canClick && handleCellClick(participant, day, hasWorkout)}
+                            className="btn-press w-7 h-7 rounded-full mx-auto border-2 border-dashed transition-all"
+                            style={{ borderColor: 'hsl(var(--primary) / 0.4)' }}
+                            disabled={!canClick}
                           />
                         ) : isFutureDay ? (
                           <div
@@ -283,12 +489,10 @@ export function CompactWeeklyGrid({
                           />
                         ) : (
                           <button
-                            onClick={() => canAdminClick && handleDayCellClick(participant, day, hasWorkout)}
-                            className="w-7 h-7 rounded-full mx-auto flex items-center justify-center transition-all"
-                            style={{
-                              background: 'hsl(var(--destructive) / 0.1)',
-                            }}
-                            disabled={!canAdminClick}
+                            onClick={() => canClick && handleCellClick(participant, day, hasWorkout)}
+                            className="btn-press w-7 h-7 rounded-full mx-auto flex items-center justify-center transition-all hover:opacity-70"
+                            style={{ background: 'hsl(var(--destructive) / 0.1)' }}
+                            disabled={!canClick}
                           >
                             <svg
                               className="w-3.5 h-3.5"
@@ -309,7 +513,7 @@ export function CompactWeeklyGrid({
                   {/* Week count */}
                   <td className="py-3 text-center px-3">
                     <span
-                      className="text-sm font-bold font-mono-tab"
+                      className="stat-number text-sm"
                       style={{
                         color: weekDone >= progress.minWorkoutsPerWeek
                           ? 'hsl(var(--accent))'
@@ -339,24 +543,26 @@ export function CompactWeeklyGrid({
         </span>
         {progress.totalPenalty > 0 ? (
           <span
-            className="px-2 py-1 rounded-lg text-xs font-medium"
+            className="px-2 py-1 text-xs font-medium"
             style={{
               background: 'hsl(var(--warning) / 0.15)',
               color: 'hsl(var(--warning))',
+              borderRadius: 'var(--radius)',
             }}
           >
-            ${progress.totalPenalty} MXN debt
+            ${progress.totalPenalty} debt
           </span>
         ) : (
           <span
-            className="px-2 py-1 rounded-lg text-xs font-medium flex items-center gap-1"
+            className="px-2 py-1 text-xs font-medium flex items-center gap-1"
             style={{
               background: 'hsl(var(--accent) / 0.15)',
               color: 'hsl(var(--accent))',
+              borderRadius: 'var(--radius)',
             }}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
             On track!
           </span>
@@ -372,12 +578,7 @@ export function CompactWeeklyGrid({
             color: 'hsl(var(--muted-foreground) / 0.7)',
           }}
         >
-          <span className="flex items-center justify-center gap-2">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Click on missed days to log workouts for participants
-          </span>
+          Click day headers to check all, or individual cells for one participant
         </div>
       )}
     </div>

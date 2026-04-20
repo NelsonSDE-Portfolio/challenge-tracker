@@ -58,4 +58,16 @@ export const challengeService = {
     });
     return response.data.challenge;
   },
+
+  async leave(challengeId: string, deleteData: boolean = false): Promise<void> {
+    await api.post(`/challenges/${challengeId}/leave?deleteData=${deleteData}`);
+  },
+
+  async delete(challengeId: string, keepData: boolean = false): Promise<void> {
+    await api.delete(`/challenges/${challengeId}?keepData=${keepData}`);
+  },
+
+  async removeParticipant(challengeId: string, userId: string, deleteData: boolean = false): Promise<void> {
+    await api.delete(`/challenges/${challengeId}/participants/${userId}?deleteData=${deleteData}`);
+  },
 };
