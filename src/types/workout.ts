@@ -6,6 +6,8 @@ export interface WorkoutLog {
   source: 'self' | 'admin';
   addedBy?: string;
   note?: string;
+  activityType?: string;
+  metadata?: Record<string, number>;
   createdAt: string;
 }
 
@@ -13,6 +15,8 @@ export interface CreateWorkoutData {
   date: string;
   photoUrl?: string;
   note?: string;
+  activityType?: string;
+  metadata?: Record<string, number>;
 }
 
 export interface AdminCreateWorkoutData {
@@ -20,6 +24,8 @@ export interface AdminCreateWorkoutData {
   date: string;
   photoUrl?: string;
   note?: string;
+  activityType?: string;
+  metadata?: Record<string, number>;
 }
 
 export interface WorkoutStats {

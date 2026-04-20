@@ -16,7 +16,6 @@ export function ChallengeList({ onCreateClick, onJoinClick }: ChallengeListProps
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Only fetch when Clerk is loaded and user is signed in
     if (isLoaded && isSignedIn) {
       loadChallenges();
     }
@@ -26,7 +25,7 @@ export function ChallengeList({ onCreateClick, onJoinClick }: ChallengeListProps
     try {
       setLoading(true);
       const data = await challengeService.getAll();
-      setChallenges(data);
+      setChallenges(data || []);
       setError(null);
     } catch (err) {
       setError('Failed to load challenges');
@@ -36,139 +35,116 @@ export function ChallengeList({ onCreateClick, onJoinClick }: ChallengeListProps
     }
   };
 
-  const getStatusBadge = (status: Challenge['status']) => {
-    const styles = {
+  const getStatusStyle = (status: Challenge['status']) => {
+    const map = {
       active: {
-        background: 'hsl(var(--primary) / 0.2)',
-        color: 'hsl(var(--primary))',
-        border: '1px solid hsl(var(--primary) / 0.3)',
+        borderColor: '#FF6B35',
+        badge: { background: '#FF6B35', color: 'white' },
+        label: 'Active',
       },
       upcoming: {
-        background: 'hsl(var(--warning) / 0.2)',
-        color: 'hsl(var(--warning))',
-        border: '1px solid hsl(var(--warning) / 0.3)',
+        borderColor: '#00C49A',
+        badge: { background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' },
+        label: 'Upcoming',
       },
       completed: {
-        background: 'hsl(var(--muted))',
-        color: 'hsl(var(--muted-foreground))',
-        border: '1px solid hsl(var(--border))',
+        borderColor: '#1DB954',
+        badge: { background: '#1DB954', color: 'white' },
+        label: 'Completed',
       },
     };
-    const style = styles[status];
-    return (
-      <span
-        className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
-        style={style}
-      >
-        {status === 'active' && (
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1 animate-pulse" />
-        )}
-        {status}
-      </span>
-    );
+    return map[status];
   };
 
+  // Skeleton loading — no spinners
   if (loading) {
     return (
-      <div className="flex justify-center py-16">
-        <div className="relative">
-          <div
-            className="w-12 h-12 rounded-full animate-spin"
-            style={{
-              background: 'var(--gradient-primary)',
-              mask: 'radial-gradient(circle at center, transparent 60%, black 61%)',
-              WebkitMask: 'radial-gradient(circle at center, transparent 60%, black 61%)',
-            }}
-          />
-          <div
-            className="absolute inset-0 rounded-full blur-xl opacity-30 animate-pulse"
-            style={{ background: 'var(--gradient-primary)' }}
-          />
-        </div>
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="card p-5">
+            <div className="flex justify-between items-start mb-3">
+              <div className="skeleton h-5 w-40" />
+              <div className="skeleton h-5 w-16 rounded" />
+            </div>
+            <div className="skeleton h-4 w-full mb-2" />
+            <div className="flex gap-2 mt-4">
+              <div className="skeleton h-6 w-20 rounded" />
+              <div className="skeleton h-6 w-24 rounded" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="glass text-center py-12 px-6 rounded-2xl mx-auto max-w-md">
-        <div
-          className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-4"
-          style={{
-            background: 'hsl(var(--destructive) / 0.1)',
-            border: '1px solid hsl(var(--destructive) / 0.2)',
-          }}
-        >
-          <svg
-            className="w-7 h-7"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            style={{ color: 'hsl(var(--destructive))' }}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        <p
-          className="font-semibold mb-2"
-          style={{ color: 'hsl(var(--destructive))' }}
-        >
+      <div className="card text-center py-10 px-6 max-w-md mx-auto fade-in-up">
+        <p className="font-semibold mb-1" style={{ color: 'hsl(var(--destructive))' }}>
           {error}
+        </p>
+        <p className="text-sm mb-6" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          Check your connection and try again.
         </p>
         <button
           onClick={loadChallenges}
-          className="mt-4 px-6 py-3 rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105"
+          className="btn-press px-5 py-2.5 text-sm font-bold text-white"
           style={{
             background: 'var(--gradient-primary)',
-            color: 'white',
+            borderRadius: 'var(--radius)',
           }}
         >
-          Try Again
+          Retry
         </button>
       </div>
     );
   }
 
+  // Empty state — invitation, not error
   if (challenges.length === 0) {
     return (
-      <div className="glass text-center py-12 px-6 rounded-2xl mx-auto max-w-md fade-in-up">
+      <div className="card text-center py-12 px-6 max-w-md mx-auto fade-in-up">
         <div
-          className="w-20 h-20 mx-auto rounded-2xl flex items-center justify-center mb-6"
-          style={{ background: 'var(--gradient-secondary)' }}
+          className="w-12 h-12 mx-auto flex items-center justify-center mb-5"
+          style={{
+            background: 'var(--gradient-primary)',
+            borderRadius: 'var(--radius)',
+          }}
         >
-          <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
         <h3
-          className="text-xl font-bold mb-2"
+          className="text-lg font-bold mb-2"
           style={{ color: 'hsl(var(--foreground))' }}
         >
           No challenges yet
         </h3>
         <p
-          className="mb-8"
-          style={{ color: 'hsl(var(--muted-foreground))' }}
+          className="text-sm mb-8"
+          style={{ color: 'hsl(var(--primary))' }}
         >
-          Create a new challenge or join an existing one to get started!
+          Ready to hold yourself accountable? Let's fix that.
         </p>
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-3">
           <button
             onClick={onCreateClick}
-            className="px-6 py-3 rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105"
+            className="btn-press px-5 py-2.5 text-sm font-bold text-white"
             style={{
               background: 'var(--gradient-primary)',
-              color: 'white',
+              borderRadius: 'var(--radius)',
             }}
           >
             Create Challenge
           </button>
           <button
             onClick={onJoinClick}
-            className="px-6 py-3 rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105"
+            className="btn-press px-5 py-2.5 text-sm font-medium"
             style={{
-              background: 'var(--gradient-secondary)',
-              color: 'white',
+              background: 'hsl(var(--muted))',
+              color: 'hsl(var(--muted-foreground))',
+              borderRadius: 'var(--radius)',
             }}
           >
             Join with Code
@@ -179,134 +155,122 @@ export function ChallengeList({ onCreateClick, onJoinClick }: ChallengeListProps
   }
 
   return (
-    <div className="space-y-6 fade-in-up">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2
-          className="text-xl font-bold"
-          style={{ color: 'hsl(var(--foreground))' }}
+    <div className="space-y-4 fade-in-up">
+      {/* Action bar */}
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={onJoinClick}
+          className="btn-press px-4 py-2 text-sm font-medium"
+          style={{
+            background: 'hsl(var(--muted))',
+            color: 'hsl(var(--muted-foreground))',
+            borderRadius: 'var(--radius)',
+          }}
         >
-          Your Challenges
-        </h2>
-        <div className="flex gap-3">
-          <button
-            onClick={onJoinClick}
-            className="px-4 py-2 text-sm font-medium rounded-xl transition-all duration-300 hover:scale-105"
-            style={{
-              background: 'hsl(var(--secondary) / 0.1)',
-              color: 'hsl(var(--secondary))',
-              border: '1px solid hsl(var(--secondary) / 0.2)',
-            }}
-          >
-            Join with Code
-          </button>
-          <button
-            onClick={onCreateClick}
-            className="px-4 py-2 text-sm font-bold rounded-xl transition-all duration-300 hover:scale-105"
-            style={{
-              background: 'var(--gradient-primary)',
-              color: 'white',
-            }}
-          >
-            + Create
-          </button>
-        </div>
+          Join with Code
+        </button>
+        <button
+          onClick={onCreateClick}
+          className="btn-press px-4 py-2 text-sm font-bold text-white"
+          style={{
+            background: 'var(--gradient-primary)',
+            borderRadius: 'var(--radius)',
+          }}
+        >
+          + New Challenge
+        </button>
       </div>
 
-      {/* Challenge Cards */}
-      <div className="grid gap-4 stagger-children">
-        {challenges.map((challenge) => (
-          <Link
-            key={challenge._id}
-            to={challenge._id}
-            relative="path"
-            className="glass block group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-0.5 gradient-border"
-          >
-            <div className="p-5">
-              <div className="flex justify-between items-start mb-3">
-                <h3
-                  className="font-bold text-lg"
-                  style={{ color: 'hsl(var(--foreground))' }}
-                >
-                  {challenge.name}
-                </h3>
-                {getStatusBadge(challenge.status)}
-              </div>
-
-              {challenge.description && (
-                <p
-                  className="text-sm mb-4 line-clamp-2"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}
-                >
-                  {challenge.description}
-                </p>
-              )}
-
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <span
-                    className="px-2.5 py-1 rounded-lg text-xs font-medium"
-                    style={{
-                      background: 'hsl(var(--primary) / 0.1)',
-                      color: 'hsl(var(--primary))',
-                      border: '1px solid hsl(var(--primary) / 0.2)',
-                    }}
-                  >
-                    {challenge.rules.minWorkoutsPerWeek}x/week
-                  </span>
-                  <span
-                    className="px-2.5 py-1 rounded-lg text-xs font-medium"
-                    style={{
-                      background: 'hsl(var(--destructive) / 0.1)',
-                      color: 'hsl(var(--destructive))',
-                      border: '1px solid hsl(var(--destructive) / 0.2)',
-                    }}
-                  >
-                    ${challenge.rules.penaltyAmount}/miss
-                  </span>
-                </div>
-
-                <div
-                  className="flex items-center gap-2 text-sm"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  {challenge.participantCount}
-                </div>
-              </div>
-
-              {challenge.isAdmin && (
-                <div
-                  className="mt-3 pt-3"
-                  style={{ borderTop: '1px solid hsl(var(--border))' }}
-                >
-                  <span
-                    className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider"
-                    style={{
-                      background: 'hsl(var(--primary) / 0.1)',
-                      color: 'hsl(var(--primary))',
-                      border: '1px solid hsl(var(--primary) / 0.2)',
-                    }}
-                  >
-                    Admin
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Hover arrow indicator */}
-            <div
-              className="absolute right-5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1"
-              style={{ color: 'hsl(var(--muted-foreground))' }}
+      {/* Challenge Cards — solid, grounded, accent left border */}
+      <div className="space-y-3 stagger-children">
+        {challenges.map((challenge) => {
+          const status = getStatusStyle(challenge.status);
+          return (
+            <Link
+              key={challenge._id}
+              to={challenge._id}
+              relative="path"
+              className="card block group transition-colors duration-150 hover:bg-[hsl(0_0%_99%)]"
+              style={{ borderLeft: `3px solid ${status.borderColor}` }}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </Link>
-        ))}
+              <div className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+                    {challenge.name}
+                  </h3>
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5"
+                    style={{
+                      ...status.badge,
+                      borderRadius: 'var(--radius)',
+                    }}
+                  >
+                    {status.label}
+                  </span>
+                </div>
+
+                {challenge.description && (
+                  <p
+                    className="text-sm mb-3 line-clamp-1"
+                    style={{ color: 'hsl(var(--muted-foreground))' }}
+                  >
+                    {challenge.description}
+                  </p>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="text-xs font-medium px-2 py-0.5"
+                      style={{
+                        background: 'hsl(var(--muted))',
+                        color: 'hsl(var(--muted-foreground))',
+                        borderRadius: 'var(--radius)',
+                      }}
+                    >
+                      {challenge.rules.minWorkoutsPerWeek}x/week
+                    </span>
+                    <span
+                      className="text-xs font-medium px-2 py-0.5"
+                      style={{
+                        background: 'hsl(var(--destructive) / 0.08)',
+                        color: 'hsl(var(--destructive))',
+                        borderRadius: 'var(--radius)',
+                      }}
+                    >
+                      ${challenge.rules.penaltyAmount}/miss
+                    </span>
+                    {challenge.isAdmin && (
+                      <span
+                        className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5"
+                        style={{
+                          background: 'hsl(var(--primary) / 0.1)',
+                          color: 'hsl(var(--primary))',
+                          borderRadius: 'var(--radius)',
+                        }}
+                      >
+                        Admin
+                      </span>
+                    )}
+                  </div>
+
+                  <div
+                    className="flex items-center gap-1.5 text-xs"
+                    style={{ color: 'hsl(var(--muted-foreground))' }}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    {challenge.participantCount}
+                    <svg className="w-3.5 h-3.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

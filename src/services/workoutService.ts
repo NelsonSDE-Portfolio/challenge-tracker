@@ -55,4 +55,12 @@ export const workoutService = {
     return response.data.workout;
   },
 
+  async adminDeleteByDate(
+    challengeId: string,
+    userId: string,
+    date: string,
+  ): Promise<void> {
+    await api.delete(`/challenges/${challengeId}/workouts/admin/${userId}/${date}`);
+  },
+
 };
