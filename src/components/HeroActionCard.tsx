@@ -100,11 +100,11 @@ export function HeroActionCard({
       let photoUrl: string | undefined;
 
       if (photo) {
-        const { uploadUrl, key } = await workoutService.getPresignedUrl(challengeId, photo.type);
+        const { uploadUrl, fileUrl } = await workoutService.getPresignedUrl(challengeId, photo.type);
         setUploadProgress(30);
         await workoutService.uploadPhoto(uploadUrl, photo);
         setUploadProgress(70);
-        photoUrl = key;  // Send the S3 key as photoUrl - backend will sign it on read
+        photoUrl = fileUrl;
       } else {
         setUploadProgress(50);
       }
