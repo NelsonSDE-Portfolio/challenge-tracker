@@ -28,7 +28,6 @@ export function HeroActionCard({
   onWorkoutLogged,
 }: HeroActionCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
   const [date, setDate] = useState(getLocalDateString());
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -145,7 +144,7 @@ export function HeroActionCard({
 
   const resetForm = () => {
     setExpanded(false);
-    setShowDetails(false);
+
     setPhoto(null);
     setPhotoPreview(null);
     setNote('');
@@ -187,7 +186,7 @@ export function HeroActionCard({
   const handleCloseSuccess = () => {
     setShowSuccess(false);
     setExpanded(false);
-    setShowDetails(false);
+
     setPhoto(null);
     setPhotoPreview(null);
     setNote('');
@@ -274,7 +273,7 @@ export function HeroActionCard({
           }}
         >
           <div
-            className="glass rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 fade-in-up"
+            className="glass rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 fade-in-up max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {showSuccess ? (
@@ -414,26 +413,8 @@ export function HeroActionCard({
                     </div>
                   )}
 
-                  {/* Progressive disclosure toggle */}
-                  {!showDetails && (
-                    <button
-                      type="button"
-                      onClick={() => setShowDetails(true)}
-                      className="flex items-center gap-1.5 text-sm font-medium transition-colors"
-                      style={{ color: 'hsl(var(--muted-foreground))' }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--primary))'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--muted-foreground))'}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Add details, photo, or note
-                    </button>
-                  )}
-
-                  {/* Expanded details — Phase 2 */}
-                  {showDetails && (
-                    <div className="space-y-4 fade-in-up">
+                  {/* Details section */}
+                  <div className="space-y-4">
                       {/* Metadata Fields */}
                       {activityType && (
                         <div>
@@ -521,7 +502,6 @@ export function HeroActionCard({
                         ref={fileInputRef}
                         type="file"
                         accept="image/*"
-                        capture="environment"
                         onChange={handlePhotoSelect}
                         className="hidden"
                       />
@@ -626,7 +606,6 @@ export function HeroActionCard({
                         />
                       </div>
                     </div>
-                  )}
 
                   {/* Progress Bar */}
                   {loading && (
