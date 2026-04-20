@@ -45,21 +45,39 @@ export function JoinChallengeForm({ onSuccess, onCancel, initialCode = '' }: Joi
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-lg p-6">
-      <h2 className="text-xl font-bold text-white mb-4">Join a Challenge</h2>
-      <p className="text-slate-400 text-sm mb-4">
+    <div className="card p-6">
+      <h2
+        className="text-lg font-bold mb-1"
+        style={{ color: 'hsl(var(--foreground))' }}
+      >
+        Join a Challenge
+      </h2>
+      <p
+        className="text-sm mb-5"
+        style={{ color: 'hsl(var(--muted-foreground))' }}
+      >
         Enter the invite code shared by the challenge admin
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg text-sm">
+          <div
+            className="p-3 rounded-lg text-sm"
+            style={{
+              background: 'hsl(var(--destructive) / 0.1)',
+              border: '1px solid hsl(var(--destructive) / 0.3)',
+              color: 'hsl(var(--destructive))',
+            }}
+          >
             {error}
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1">
+          <label
+            className="block text-sm font-medium mb-1"
+            style={{ color: 'hsl(var(--foreground))' }}
+          >
             Invite Code
           </label>
           <input
@@ -67,23 +85,38 @@ export function JoinChallengeForm({ onSuccess, onCancel, initialCode = '' }: Joi
             required
             value={inviteCode}
             onChange={(e) => setInviteCode(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-center text-lg tracking-wider"
+            className="w-full px-4 py-3 rounded-lg text-lg font-mono text-center tracking-widest focus:outline-none focus:ring-2"
+            style={{
+              background: 'hsl(var(--muted))',
+              color: 'hsl(var(--foreground))',
+              border: 'none',
+            }}
             placeholder="abc123def456"
           />
         </div>
 
-        <div className="flex gap-3 pt-4">
+        <div className="flex gap-3 pt-2">
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition"
+            className="flex-1 px-4 py-2.5 text-sm font-medium transition-all duration-200"
+            style={{
+              background: 'hsl(var(--muted))',
+              color: 'hsl(var(--muted-foreground))',
+              borderRadius: 'var(--radius)',
+            }}
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading || !inviteCode.trim()}
-            className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 text-sm font-bold transition-all duration-200 disabled:opacity-50"
+            style={{
+              background: 'var(--gradient-primary)',
+              color: 'white',
+              borderRadius: 'var(--radius)',
+            }}
           >
             {loading ? 'Joining...' : 'Join Challenge'}
           </button>

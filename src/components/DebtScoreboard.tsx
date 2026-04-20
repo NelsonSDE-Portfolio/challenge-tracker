@@ -9,31 +9,44 @@ const avatarGradients = [
   'var(--gradient-primary)',
   'var(--gradient-secondary)',
   'var(--gradient-gold)',
-  'linear-gradient(135deg, hsl(186 100% 45%), hsl(270 60% 55%))',
-  'linear-gradient(135deg, hsl(330 70% 55%), hsl(4 80% 55%))',
+  'linear-gradient(135deg, #FF6B35, #00C49A)',
+  'linear-gradient(135deg, #FF3B30, #FF6B35)',
 ];
 
 
 export function DebtScoreboard({ allWeeksDebt }: DebtScoreboardProps) {
   const [expanded, setExpanded] = useState(false);
 
+  const rankGradients = [
+    'var(--gradient-gold)',
+    'var(--gradient-silver)',
+    'var(--gradient-bronze)',
+  ];
+
   const getMedalElement = (rank: number) => {
     if (rank < 3) {
       return (
         <div
-          className="w-8 text-center text-lg"
+          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+          style={{
+            background: rankGradients[rank],
+            color: 'white',
+          }}
         >
-          {rank === 0 ? '🥇' : rank === 1 ? '🥈' : '🥉'}
+          {rank + 1}
         </div>
       );
     }
 
     return (
       <div
-        className="w-8 text-center text-sm font-bold"
-        style={{ color: 'hsl(var(--muted-foreground))' }}
+        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+        style={{
+          background: 'hsl(var(--muted))',
+          color: 'hsl(var(--muted-foreground))',
+        }}
       >
-        #{rank + 1}
+        {rank + 1}
       </div>
     );
   };
