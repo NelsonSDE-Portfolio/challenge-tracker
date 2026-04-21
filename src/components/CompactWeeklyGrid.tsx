@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { workoutService } from '../services/workoutService';
+import { WorkoutDetailModal } from './WorkoutDetailModal';
 import type { WeeklyProgress } from '../types/stats';
 
 const getLocalDateString = (date: Date = new Date()) => {
@@ -40,6 +41,11 @@ export function CompactWeeklyGrid({
   const [addedWorkouts, setAddedWorkouts] = useState<Set<string>>(new Set());
   const [removedWorkouts, setRemovedWorkouts] = useState<Set<string>>(new Set());
   const [scrolledRight, setScrolledRight] = useState(false);
+  const [detailModal, setDetailModal] = useState<{
+    userId: string;
+    userName: string;
+    date: string;
+  } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = useCallback(() => {
@@ -459,9 +465,15 @@ export function CompactWeeklyGrid({
                               </svg>
                             </button>
                           ) : (
-                            <div
-                              className="w-7 h-7 rounded-full mx-auto flex items-center justify-center"
+                            <button
+                              onClick={() => setDetailModal({
+                                userId: participant.userId,
+                                userName: participant.name?.split(' ')[0] || 'Unknown',
+                                date: day.date,
+                              })}
+                              className="btn-press w-7 h-7 rounded-full mx-auto flex items-center justify-center transition-opacity hover:opacity-70"
                               style={{ background: 'hsl(var(--accent) / 0.15)' }}
+                              title="View workout details"
                             >
                               <svg
                                 className="w-3.5 h-3.5"
@@ -473,7 +485,7 @@ export function CompactWeeklyGrid({
                               >
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                               </svg>
-                            </div>
+                            </button>
                           )
                         ) : day.isToday ? (
                           <button
@@ -580,6 +592,17 @@ export function CompactWeeklyGrid({
         >
           Click day headers to check all, or individual cells for one participant
         </div>
+      )}
+
+      {/* Workout detail modal */}
+      {detailModal && (
+        <WorkoutDetailModal
+          challengeId={challengeId}
+          userId={detailModal.userId}
+          userName={detailModal.userName}
+          date={detailModal.date}
+          onClose={() => setDetailModal(null)}
+        />
       )}
     </div>
   );
