@@ -40,3 +40,17 @@ export interface PresignedUrlResponse {
   fileUrl: string;
   expiresIn: number;
 }
+
+export interface PublicWorkout {
+  userName: string;
+  date: string;
+  activityType?: string;
+  metadata?: Record<string, unknown>;
+  note?: string;
+  photoUrl?: string;
+  challengeName: string;
+  weeklyProgress: {
+    current: number;
+    target: number;
+  };
+}

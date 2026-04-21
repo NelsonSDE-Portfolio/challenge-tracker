@@ -4,6 +4,7 @@ import type {
   CreateWorkoutData,
   AdminCreateWorkoutData,
   PresignedUrlResponse,
+  PublicWorkout,
 } from '../types/workout';
 
 interface WorkoutResponse {
@@ -60,4 +61,20 @@ export const workoutService = {
     await api.delete(`/challenges/${challengeId}/workouts/admin/${userId}/${date}`);
   },
 
+  async share(
+    challengeId: string,
+    workoutId: string,
+  ): Promise<{ shareToken: string }> {
+    const response = await api.post<{ shareToken: string }>(
+      `/challenges/${challengeId}/workouts/${workoutId}/share`,
+    );
+    return response.data;
+  },
+
+  async getPublicWorkout(shareToken: string): Promise<PublicWorkout> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4002/api/v1';
+    const response = await fetch(`${apiUrl}/public/workouts/${shareToken}`);
+    if (!response.ok) throw new Error('Workout not found');
+    return response.json();
+  },
 };

@@ -11,6 +11,11 @@
   path = "/*.js"
   function = "cors"
 
+# Edge function for OG meta tags on shared workouts
+[[edge_functions]]
+  path = "/share/*"
+  function = "share-og"
+
 # SPA fallback
 [[redirects]]
   from = "/*"
