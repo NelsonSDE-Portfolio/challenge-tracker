@@ -24,15 +24,9 @@ export const workoutService = {
   },
 
   async uploadPhoto(uploadUrl: string, file: File): Promise<void> {
-    // Content-Type is signed in the presigned URL, so we must send
-    // the matching header. Use a Blob to ensure the exact MIME type.
-    const blob = new Blob([file], { type: file.type });
     await fetch(uploadUrl, {
       method: 'PUT',
-      body: blob,
-      headers: {
-        'Content-Type': file.type,
-      },
+      body: file,
     });
   },
 
