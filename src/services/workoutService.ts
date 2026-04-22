@@ -61,6 +61,24 @@ export const workoutService = {
     await api.delete(`/challenges/${challengeId}/workouts/admin/${userId}/${date}`);
   },
 
+  async getByUserAndDate(
+    challengeId: string,
+    userId: string,
+    date: string,
+  ): Promise<WorkoutLog | null> {
+    const response = await api.get<{ workouts: WorkoutLog[] }>(
+      `/challenges/${challengeId}/workouts`,
+      { params: { userId } },
+    );
+    return response.data.workouts.find((w) => {
+      const workoutDate = new Date(w.date);
+      const y = workoutDate.getFullYear();
+      const m = String(workoutDate.getMonth() + 1).padStart(2, '0');
+      const d = String(workoutDate.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}` === date;
+    }) || null;
+  },
+
   async share(
     challengeId: string,
     workoutId: string,
