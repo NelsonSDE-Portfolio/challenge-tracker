@@ -9,6 +9,7 @@ import { CompactWeeklyGrid } from './CompactWeeklyGrid';
 import { DebtScoreboard } from './DebtScoreboard';
 import { AdminPanel } from './AdminPanel';
 import { SectionNav } from './SectionNav';
+import { WorkoutDetailModal } from './WorkoutDetailModal';
 import type { Challenge } from '../types/challenge';
 import type { ChallengeStats, MyStats, AllWeeksDebt, WeeklyProgress } from '../types/stats';
 
@@ -34,6 +35,11 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [workoutDetail, setWorkoutDetail] = useState<{
+    userId: string;
+    userName: string;
+    date: string;
+  } | null>(null);
 
   // Close modals and menus on Escape key
   useEffect(() => {
@@ -444,6 +450,9 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
               onWeekChange={setWeekOffset}
               onDataChange={refreshDataSilently}
               isAdmin={adminMode}
+              onViewWorkout={(userId, userName, date) =>
+                setWorkoutDetail({ userId, userName, date })
+              }
             />
           )}
         </div>
@@ -689,6 +698,17 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
             </div>
           </div>
         </div>
+      )}
+
+      {/* Workout Detail Modal */}
+      {workoutDetail && (
+        <WorkoutDetailModal
+          challengeId={challenge._id}
+          userId={workoutDetail.userId}
+          userName={workoutDetail.userName}
+          date={workoutDetail.date}
+          onClose={() => setWorkoutDetail(null)}
+        />
       )}
     </div>
   );

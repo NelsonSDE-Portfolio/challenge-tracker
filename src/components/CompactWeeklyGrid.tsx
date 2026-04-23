@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
 import { workoutService } from '../services/workoutService';
-import { WorkoutDetailModal } from './WorkoutDetailModal';
 import type { WeeklyProgress } from '../types/stats';
 
 const getLocalDateString = (date: Date = new Date()) => {
@@ -18,6 +17,7 @@ interface CompactWeeklyGridProps {
   onWeekChange: (offset: number) => void;
   onDataChange: () => void;
   isAdmin?: boolean;
+  onViewWorkout?: (userId: string, userName: string, date: string) => void;
 }
 
 const avatarGradients = [
@@ -36,16 +36,12 @@ export function CompactWeeklyGrid({
   onWeekChange,
   onDataChange,
   isAdmin = false,
+  onViewWorkout,
 }: CompactWeeklyGridProps) {
   // Track optimistic updates locally so the grid updates instantly
   const [addedWorkouts, setAddedWorkouts] = useState<Set<string>>(new Set());
   const [removedWorkouts, setRemovedWorkouts] = useState<Set<string>>(new Set());
   const [scrolledRight, setScrolledRight] = useState(false);
-  const [detailModal, setDetailModal] = useState<{
-    userId: string;
-    userName: string;
-    date: string;
-  } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = useCallback(() => {
@@ -466,11 +462,11 @@ export function CompactWeeklyGrid({
                             </button>
                           ) : (
                             <button
-                              onClick={() => setDetailModal({
-                                userId: participant.userId,
-                                userName: participant.name?.split(' ')[0] || 'Unknown',
-                                date: day.date,
-                              })}
+                              onClick={() => onViewWorkout?.(
+                                participant.userId,
+                                participant.name?.split(' ')[0] || 'Unknown',
+                                day.date,
+                              )}
                               className="btn-press w-7 h-7 rounded-full mx-auto flex items-center justify-center transition-opacity hover:opacity-70"
                               style={{ background: 'hsl(var(--accent) / 0.15)' }}
                               title="View workout details"
@@ -594,16 +590,6 @@ export function CompactWeeklyGrid({
         </div>
       )}
 
-      {/* Workout detail modal */}
-      {detailModal && (
-        <WorkoutDetailModal
-          challengeId={challengeId}
-          userId={detailModal.userId}
-          userName={detailModal.userName}
-          date={detailModal.date}
-          onClose={() => setDetailModal(null)}
-        />
-      )}
     </div>
   );
 }
