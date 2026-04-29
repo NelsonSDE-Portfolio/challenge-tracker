@@ -36,6 +36,7 @@ export function HeroActionCard({
   const [metadata, setMetadata] = useState<Record<string, number>>({});
   const [customActivity, setCustomActivity] = useState('');
   const [muscleGroups, setMuscleGroups] = useState<string[]>([]);
+  const [lastWorkoutId, setLastWorkoutId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -113,13 +114,14 @@ export function HeroActionCard({
         fullMetadata.muscleGroups = muscleGroups;
       }
 
-      await workoutService.create(challengeId, {
+      const createdWorkout = await workoutService.create(challengeId, {
         date,
         photoUrl,
         note: activityType === 'other' ? customActivity || note : note || undefined,
         activityType: activityType || undefined,
         metadata: Object.keys(fullMetadata).length > 0 ? fullMetadata as Record<string, number> : undefined,
       });
+      setLastWorkoutId(createdWorkout._id);
       setUploadProgress(100);
 
       // Show success state with confetti
@@ -155,11 +157,12 @@ export function HeroActionCard({
     setError(null);
   };
 
-  const buildShareMessage = () => {
+  const [shareLoading, setShareLoading] = useState(false);
+
+  const buildShareMessage = (shareUrl?: string) => {
     const activityLabel = ACTIVITY_TYPES.find((a) => a.value === activityType);
     const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    // Weekly progress: after logging, count is incremented
     const weeklyCount = myStats.weeklyWorkouts + 1;
     const weeklyGoal = minWorkoutsPerWeek;
     const isWeekComplete = weeklyCount >= weeklyGoal;
@@ -184,29 +187,38 @@ export function HeroActionCard({
       msg += ` - Weekly goal complete!`;
     }
 
+    if (shareUrl) msg += `\n\n${shareUrl}`;
     msg += '\n\n- Challenge Tracker';
     return msg;
   };
 
-  const handleShareWhatsApp = async () => {
-    const message = buildShareMessage();
+  const handleShare = async () => {
+    if (!lastWorkoutId) return;
+    setShareLoading(true);
 
-    // Use Web Share API if available (mobile) — supports sharing images
-    if (navigator.share && photo) {
-      try {
-        const file = new File([photo], photo.name, { type: photo.type });
-        await navigator.share({
-          text: message,
-          files: [file],
-        });
-        return;
-      } catch {
-        // User cancelled or share failed — fall back to WhatsApp link
+    try {
+      const { shareToken } = await workoutService.share(challengeId, lastWorkoutId);
+      const portfolioUrl = import.meta.env.VITE_PORTFOLIO_URL || window.location.origin;
+      const shareUrl = `${portfolioUrl}/projects/challenge-tracker/share/${shareToken}`;
+      const message = buildShareMessage(shareUrl);
+
+      if (navigator.share && photo) {
+        try {
+          const file = new File([photo], photo.name, { type: photo.type });
+          await navigator.share({ text: message, files: [file] });
+          return;
+        } catch {
+          // user cancelled or files unsupported — fall through to wa.me
+        }
       }
-    }
 
-    // Fallback: WhatsApp text-only link
-    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    } catch {
+      const message = buildShareMessage();
+      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    } finally {
+      setShareLoading(false);
+    }
   };
 
   const handleCloseSuccess = () => {
@@ -323,8 +335,9 @@ export function HeroActionCard({
 
                 <div className="flex gap-3 w-full">
                   <button
-                    onClick={handleShareWhatsApp}
-                    className="btn-press flex-1 px-4 py-3 text-sm font-bold text-white flex items-center justify-center gap-2"
+                    onClick={handleShare}
+                    disabled={shareLoading}
+                    className="btn-press flex-1 px-4 py-3 text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50"
                     style={{
                       background: '#25D366',
                       borderRadius: 'var(--radius)',
@@ -333,7 +346,7 @@ export function HeroActionCard({
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                     </svg>
-                    Share
+                    {shareLoading ? 'Sharing...' : 'Share'}
                   </button>
                   <button
                     onClick={handleCloseSuccess}

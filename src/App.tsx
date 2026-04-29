@@ -9,6 +9,7 @@ import { CreateChallengeForm } from './components/CreateChallengeForm';
 import { JoinChallengeForm } from './components/JoinChallengeForm';
 import { JoinChallengePage } from './pages/JoinChallengePage';
 import { LandingPage } from './pages/LandingPage';
+import { ShareWorkoutPage } from './pages/ShareWorkoutPage';
 import { isEmbedded, BackToPortfolioButton } from './components/BackToPortfolioButton';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
@@ -154,6 +155,7 @@ function App() {
       <div className="challenge-tracker">
         <ErrorBoundary>
         <Routes>
+          <Route path="/share/:shareToken" element={<ShareWorkoutPage />} />
           <Route path="/" element={<ChallengeDashboard />} />
           <Route
             path="/:id"
