@@ -9,7 +9,8 @@ import { CompactWeeklyGrid } from './CompactWeeklyGrid';
 import { DebtScoreboard } from './DebtScoreboard';
 import { AdminPanel } from './AdminPanel';
 import { SectionNav } from './SectionNav';
-import type { Challenge } from '../types/challenge';
+import { WorkoutDetailModal } from './WorkoutDetailModal';
+import type { Challenge, Participant } from '../types/challenge';
 import type { ChallengeStats, MyStats, AllWeeksDebt, WeeklyProgress } from '../types/stats';
 
 interface UnifiedDashboardProps {
@@ -32,8 +33,18 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const [leaveDeleteData, setLeaveDeleteData] = useState(false);
   const [leaveLoading, setLeaveLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [workoutDetail, setWorkoutDetail] = useState<{
+    userId: string;
+    userName: string;
+    date: string;
+  } | null>(null);
 
   // Close modals and menus on Escape key
   useEffect(() => {
@@ -96,13 +107,67 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
     onChallengeUpdate();
   };
 
-  const copyInviteLink = async () => {
-    if (!challenge?.inviteCode) return;
-    const baseUrl = window.location.origin;
-    const url = `${baseUrl}/join/${challenge.inviteCode}`;
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const loadParticipants = async () => {
+    try {
+      const list = await challengeService.getParticipants(challenge._id);
+      setParticipants(list);
+    } catch (err) {
+      console.error('Failed to load participants:', err);
+    }
+  };
+
+  const handleOpenInvite = () => {
+    setInviteError(null);
+    setInviteSuccess(null);
+    setShowInviteModal(true);
+    loadParticipants();
+  };
+
+  const handleSendInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    setInviteLoading(true);
+    setInviteError(null);
+    setInviteSuccess(null);
+    try {
+      const res = await challengeService.invite(
+        challenge._id,
+        inviteEmail.trim(),
+        inviteName.trim() || undefined,
+      );
+      setInviteSuccess(
+        res.pending
+          ? `Pending invite created for ${inviteEmail.trim()}. They'll join automatically when they sign up.`
+          : `${inviteEmail.trim()} was added to the challenge.`,
+      );
+      setInviteEmail('');
+      setInviteName('');
+      await loadParticipants();
+      onChallengeUpdate();
+      loadAllData();
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { error?: { message?: string } | string } } })
+          ?.response?.data?.error;
+      setInviteError(
+        typeof message === 'string'
+          ? message
+          : message?.message || 'Failed to send invite',
+      );
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const handleRevokeInvite = async (userId: string) => {
+    try {
+      await challengeService.revokeInvite(challenge._id, userId);
+      await loadParticipants();
+      onChallengeUpdate();
+      loadAllData();
+    } catch (err) {
+      console.error('Failed to revoke invite:', err);
+    }
   };
 
   const handleLeaveChallenge = async () => {
@@ -303,7 +368,7 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
                           <button
                             onClick={() => {
                               setShowOverflowMenu(false);
-                              setShowInviteModal(true);
+                              handleOpenInvite();
                             }}
                             className="w-full text-left px-4 py-2.5 text-sm font-medium flex items-center gap-3 transition-colors"
                             style={{ color: 'hsl(var(--foreground))' }}
@@ -444,6 +509,9 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
               onWeekChange={setWeekOffset}
               onDataChange={refreshDataSilently}
               isAdmin={adminMode}
+              onViewWorkout={(userId, userName, date) =>
+                setWorkoutDetail({ userId, userName, date })
+              }
             />
           )}
         </div>
@@ -590,15 +658,15 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
         </div>
       )}
 
-      {/* Invite Modal */}
-      {showInviteModal && challenge.inviteCode && (
+      {/* Invite Friend Modal — admin only */}
+      {showInviteModal && challenge.isAdmin && (
         <div
           className="fixed inset-0 flex items-center justify-center z-50"
           style={{ background: 'hsl(var(--foreground) / 0.5)', backdropFilter: 'blur(8px)' }}
           onClick={() => setShowInviteModal(false)}
         >
           <div
-            className="glass rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 fade-in-up"
+            className="glass rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 fade-in-up max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-6">
@@ -615,80 +683,153 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
                   className="text-xl font-bold"
                   style={{ color: 'hsl(var(--foreground))' }}
                 >
-                  Invite Friends
+                  Invite a friend
                 </h3>
                 <p
                   className="text-sm"
                   style={{ color: 'hsl(var(--muted-foreground))' }}
                 >
-                  Share this link or code
+                  They'll join automatically when they sign up with this email.
                 </p>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <form onSubmit={handleSendInvite} className="space-y-3 mb-4">
               <div>
                 <label
                   className="text-xs font-medium block mb-2"
                   style={{ color: 'hsl(var(--muted-foreground))' }}
                 >
-                  Invite Code
+                  Email
                 </label>
-                <div
-                  className="rounded-xl p-4 font-mono text-center text-2xl tracking-[0.3em] font-bold"
-                  style={{
-                    background: 'hsl(var(--primary) / 0.1)',
-                    color: 'hsl(var(--primary))',
-                    border: '1px solid hsl(var(--primary) / 0.2)',
-                  }}
-                >
-                  {challenge.inviteCode}
-                </div>
-              </div>
-
-              <div>
-                <label
-                  className="text-xs font-medium block mb-2"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}
-                >
-                  Invite Link
-                </label>
-                <div
-                  className="rounded-xl p-4 text-sm break-all"
+                <input
+                  type="email"
+                  required
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="friend@example.com"
+                  className="w-full px-3 py-2 rounded-lg text-sm"
                   style={{
                     background: 'hsl(var(--muted))',
-                    color: 'hsl(var(--muted-foreground))',
+                    color: 'hsl(var(--foreground))',
+                    border: '1px solid hsl(var(--border))',
                   }}
-                >
-                  {`${window.location.origin}/join/${challenge.inviteCode}`}
-                </div>
+                />
               </div>
-            </div>
+              <div>
+                <label
+                  className="text-xs font-medium block mb-2"
+                  style={{ color: 'hsl(var(--muted-foreground))' }}
+                >
+                  Display name (optional)
+                </label>
+                <input
+                  type="text"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                  placeholder="Alex"
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{
+                    background: 'hsl(var(--muted))',
+                    color: 'hsl(var(--foreground))',
+                    border: '1px solid hsl(var(--border))',
+                  }}
+                />
+              </div>
 
-            <div className="flex gap-3 mt-6">
+              {inviteError && (
+                <p className="text-xs" style={{ color: 'hsl(var(--destructive))' }}>
+                  {inviteError}
+                </p>
+              )}
+              {inviteSuccess && (
+                <p className="text-xs" style={{ color: 'hsl(var(--accent))' }}>
+                  {inviteSuccess}
+                </p>
+              )}
+
               <button
-                onClick={() => setShowInviteModal(false)}
-                className="flex-1 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300"
-                style={{
-                  background: 'hsl(var(--muted))',
-                  color: 'hsl(var(--muted-foreground))',
-                }}
+                type="submit"
+                disabled={inviteLoading || !inviteEmail.trim()}
+                className="w-full px-4 py-3 rounded-xl font-bold text-sm text-white disabled:opacity-50"
+                style={{ background: 'var(--gradient-primary)' }}
               >
-                Close
+                {inviteLoading ? 'Sending...' : 'Send invite'}
               </button>
-              <button
-                onClick={copyInviteLink}
-                className="flex-1 px-4 py-3 rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105"
-                style={{
-                  background: 'var(--gradient-primary)',
-                  color: 'white',
-                }}
-              >
-                {copied ? 'Copied!' : 'Copy Link'}
-              </button>
-            </div>
+            </form>
+
+            {participants.filter((p) => p.pendingInvite).length > 0 && (
+              <div className="border-t pt-4" style={{ borderColor: 'hsl(var(--border))' }}>
+                <p
+                  className="text-xs font-medium uppercase tracking-wider mb-3"
+                  style={{ color: 'hsl(var(--muted-foreground))' }}
+                >
+                  Pending invites
+                </p>
+                <ul className="space-y-2">
+                  {participants
+                    .filter((p) => p.pendingInvite)
+                    .map((p) => (
+                      <li
+                        key={p.userId}
+                        className="flex items-center justify-between rounded-lg p-3"
+                        style={{ background: 'hsl(var(--muted) / 0.5)' }}
+                      >
+                        <div className="min-w-0">
+                          <p
+                            className="text-sm font-medium truncate"
+                            style={{ color: 'hsl(var(--foreground))' }}
+                          >
+                            {p.name || p.email}
+                          </p>
+                          {p.name && p.email && (
+                            <p
+                              className="text-xs truncate"
+                              style={{ color: 'hsl(var(--muted-foreground))' }}
+                            >
+                              {p.email}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleRevokeInvite(p.userId)}
+                          className="text-xs font-medium px-2 py-1 rounded-md"
+                          style={{
+                            color: 'hsl(var(--destructive))',
+                            background: 'hsl(var(--destructive) / 0.1)',
+                          }}
+                        >
+                          Revoke
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowInviteModal(false)}
+              className="w-full mt-4 px-4 py-2 rounded-lg text-sm font-medium"
+              style={{
+                background: 'hsl(var(--muted))',
+                color: 'hsl(var(--muted-foreground))',
+              }}
+            >
+              Close
+            </button>
           </div>
         </div>
+      )}
+
+      {/* Workout Detail Modal */}
+      {workoutDetail && (
+        <WorkoutDetailModal
+          challengeId={challenge._id}
+          userId={workoutDetail.userId}
+          userName={workoutDetail.userName}
+          date={workoutDetail.date}
+          onClose={() => setWorkoutDetail(null)}
+        />
       )}
     </div>
   );

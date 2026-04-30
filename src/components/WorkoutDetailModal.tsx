@@ -134,7 +134,7 @@ export function WorkoutDetailModal({
                 <img
                   src={workout.photoUrl}
                   alt="Workout photo"
-                  className="w-full max-h-72 object-cover rounded-xl"
+                  className="w-full h-auto rounded-xl"
                 />
               </div>
             )}

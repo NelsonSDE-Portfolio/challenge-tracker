@@ -9,6 +9,7 @@ export interface Participant {
   joinedAt: string;
   name?: string;
   email?: string;
+  pendingInvite?: boolean;
 }
 
 export interface Challenge {
@@ -19,11 +20,16 @@ export interface Challenge {
   startDate: string;
   endDate: string;
   status: 'upcoming' | 'active' | 'completed';
-  inviteCode?: string;
   participants?: Participant[];
   participantCount?: number;
   isAdmin?: boolean;
   createdAt?: string;
+}
+
+export interface InviteResponse {
+  invitedUserId: string;
+  pending: boolean;
+  message: string;
 }
 
 export interface CreateChallengeData {

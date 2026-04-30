@@ -2,6 +2,8 @@ import { api } from '../lib/api';
 import type {
   Challenge,
   CreateChallengeData,
+  InviteResponse,
+  Participant,
   UpdateChallengeData,
 } from '../types/challenge';
 
@@ -12,16 +14,6 @@ interface ChallengesResponse {
 interface ChallengeResponse {
   challenge: Challenge;
   message?: string;
-}
-
-interface InviteResponse {
-  challenge: Challenge;
-  isAlreadyParticipant: boolean;
-}
-
-interface JoinResponse {
-  challenge: Challenge;
-  message: string;
 }
 
 export const challengeService = {
@@ -45,18 +37,27 @@ export const challengeService = {
     return response.data.challenge;
   },
 
-  async getByInviteCode(inviteCode: string): Promise<InviteResponse> {
-    const response = await api.get<InviteResponse>(
-      `/challenges/invite/${inviteCode}`
+  async invite(
+    challengeId: string,
+    email: string,
+    name?: string,
+  ): Promise<InviteResponse> {
+    const response = await api.post<InviteResponse>(
+      `/challenges/${challengeId}/invites`,
+      { email, name },
     );
     return response.data;
   },
 
-  async join(inviteCode: string): Promise<Challenge> {
-    const response = await api.post<JoinResponse>('/challenges/join', {
-      inviteCode,
-    });
-    return response.data.challenge;
+  async revokeInvite(challengeId: string, userId: string): Promise<void> {
+    await api.delete(`/challenges/${challengeId}/invites/${userId}`);
+  },
+
+  async getParticipants(challengeId: string): Promise<Participant[]> {
+    const response = await api.get<{ participants: Participant[] }>(
+      `/challenges/${challengeId}/participants`,
+    );
+    return response.data.participants;
   },
 
   async leave(challengeId: string, deleteData: boolean = false): Promise<void> {
