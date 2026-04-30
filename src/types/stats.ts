@@ -7,6 +7,7 @@ export interface ParticipantStats {
   currentStreak: number;
   debt: number;
   isAdmin: boolean;
+  pendingInvite?: boolean;
 }
 
 export interface ChallengeStats {
@@ -55,6 +56,7 @@ export interface WeeklyParticipantProgress {
   name?: string;
   workoutDates: string[];
   weeklyPenalty: number;
+  pendingInvite?: boolean;
 }
 
 export interface WeeklyProgress {
@@ -83,6 +85,7 @@ export interface ParticipantDebtSummary {
   weeks: WeekDebtEntry[];
   totalDebt: number;
   totalWorkouts: number;
+  pendingInvite?: boolean;
 }
 
 export interface AllWeeksDebt {

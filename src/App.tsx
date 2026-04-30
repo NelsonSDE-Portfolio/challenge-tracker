@@ -6,8 +6,6 @@ import { ClerkAuthProvider } from './components/ClerkAuthProvider';
 import { ChallengeList } from './components/ChallengeList';
 import { ChallengeDetail } from './components/ChallengeDetail';
 import { CreateChallengeForm } from './components/CreateChallengeForm';
-import { JoinChallengeForm } from './components/JoinChallengeForm';
-import { JoinChallengePage } from './pages/JoinChallengePage';
 import { LandingPage } from './pages/LandingPage';
 import { ShareWorkoutPage } from './pages/ShareWorkoutPage';
 import { isEmbedded, BackToPortfolioButton } from './components/BackToPortfolioButton';
@@ -17,16 +15,10 @@ import './App.css';
 function ChallengeDashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
-  const [showJoin, setShowJoin] = useState(false);
   const navigate = useNavigate();
 
   const handleCreateSuccess = (challengeId: string) => {
     setShowCreate(false);
-    navigate(challengeId);
-  };
-
-  const handleJoinSuccess = (challengeId: string) => {
-    setShowJoin(false);
     navigate(challengeId);
   };
 
@@ -131,18 +123,8 @@ function ChallengeDashboard() {
               onCancel={() => setShowCreate(false)}
             />
           </div>
-        ) : showJoin ? (
-          <div className="max-w-md mx-auto fade-in-up">
-            <JoinChallengeForm
-              onSuccess={handleJoinSuccess}
-              onCancel={() => setShowJoin(false)}
-            />
-          </div>
         ) : (
-          <ChallengeList
-            onCreateClick={() => setShowCreate(true)}
-            onJoinClick={() => setShowJoin(true)}
-          />
+          <ChallengeList onCreateClick={() => setShowCreate(true)} />
         )}
       </main>
     </div>
@@ -164,48 +146,6 @@ function App() {
                 <BackToPortfolioButton />
                 <ChallengeDetail />
               </>
-            }
-          />
-          <Route
-            path="/join/:inviteCode"
-            element={
-              <div
-                className="min-h-screen"
-                style={{ background: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}
-              >
-                <BackToPortfolioButton />
-                <header style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                  <div
-                    className="max-w-3xl mx-auto px-6 py-6"
-                    style={{ paddingLeft: isEmbedded() ? '6rem' : undefined }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 flex items-center justify-center"
-                        style={{
-                          background: 'var(--gradient-secondary)',
-                          borderRadius: 'var(--radius)',
-                        }}
-                      >
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h1 className="text-xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
-                          Join Challenge
-                        </h1>
-                        <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                          You've been invited
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </header>
-                <main className="max-w-3xl mx-auto px-6 py-6">
-                  <JoinChallengePage />
-                </main>
-              </div>
             }
           />
         </Routes>

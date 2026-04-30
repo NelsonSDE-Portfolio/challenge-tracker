@@ -1,15 +1,29 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { SignUpButton } from '@clerk/clerk-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { SignUpButton, useUser } from '@clerk/clerk-react';
 import { workoutService } from '../services/workoutService';
 import { ACTIVITY_TYPES, MUSCLE_GROUPS } from '../constants';
 import type { PublicWorkout } from '../types/workout';
 
 export function ShareWorkoutPage() {
   const { shareToken } = useParams<{ shareToken: string }>();
+  const navigate = useNavigate();
+  const { isSignedIn } = useUser();
   const [workout, setWorkout] = useState<PublicWorkout | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  // When embedded under portfolio-host (federated), the host owns routing
+  // and mounts us at /projects/challenge-tracker/*. When running standalone
+  // the BrowserRouter has basename '/challenges'. navigate('/') resolves
+  // differently in each case, so pick the correct target explicitly.
+  const goToChallenges = () => {
+    if (window.location.pathname.startsWith('/projects/challenge-tracker')) {
+      navigate('/projects/challenge-tracker');
+    } else {
+      navigate('/');
+    }
+  };
 
   useEffect(() => {
     if (!shareToken) return;
@@ -59,14 +73,24 @@ export function ShareWorkoutPage() {
           <p className="text-sm mb-6" style={{ color: 'hsl(var(--muted-foreground))' }}>
             This shared workout is no longer available.
           </p>
-          <SignUpButton mode="modal">
+          {isSignedIn ? (
             <button
+              onClick={goToChallenges}
               className="px-6 py-3 rounded-xl font-bold text-sm text-white"
               style={{ background: 'var(--gradient-primary)' }}
             >
-              Join Challenge Tracker
+              Back to challenges
             </button>
-          </SignUpButton>
+          ) : (
+            <SignUpButton mode="modal">
+              <button
+                className="px-6 py-3 rounded-xl font-bold text-sm text-white"
+                style={{ background: 'var(--gradient-primary)' }}
+              >
+                Join Challenge Tracker
+              </button>
+            </SignUpButton>
+          )}
         </div>
       </div>
     );
@@ -101,18 +125,33 @@ export function ShareWorkoutPage() {
     >
       <div className="max-w-lg mx-auto px-6 py-8 fade-in-up">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: 'var(--gradient-primary)' }}
-          >
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-            </svg>
-          </div>
-          <span className="text-sm font-bold" style={{ color: 'hsl(var(--foreground))' }}>
-            Challenge Tracker
-          </span>
+        <div className="flex items-center justify-between mb-6">
+          {isSignedIn ? (
+            <button
+              onClick={goToChallenges}
+              className="btn-press flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg"
+              style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to challenges
+            </button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ background: 'var(--gradient-primary)' }}
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+              </div>
+              <span className="text-sm font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+                Challenge Tracker
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Photo */}
@@ -121,7 +160,7 @@ export function ShareWorkoutPage() {
             <img
               src={workout.photoUrl}
               alt="Workout photo"
-              className="w-full max-h-80 object-cover rounded-2xl shadow-lg"
+              className="w-full h-auto rounded-2xl shadow-lg"
             />
           </div>
         )}
@@ -213,42 +252,52 @@ export function ShareWorkoutPage() {
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="glass rounded-2xl p-6 text-center">
-          <h3
-            className="text-base font-bold mb-1"
-            style={{ color: 'hsl(var(--foreground))' }}
+        {/* CTA — public visitors only */}
+        {isSignedIn ? (
+          <button
+            onClick={goToChallenges}
+            className="btn-press w-full px-4 py-3 rounded-xl font-bold text-sm text-white transition hover:opacity-90"
+            style={{ background: 'var(--gradient-primary)' }}
           >
-            Start your own challenge
-          </h3>
-          <p
-            className="text-sm mb-5"
-            style={{ color: 'hsl(var(--muted-foreground))' }}
-          >
-            Track workouts. Stay accountable.
-          </p>
-          <div className="flex gap-3">
-            <SignUpButton mode="modal">
-              <button
-                className="flex-1 px-4 py-3 rounded-xl font-bold text-sm text-white transition hover:opacity-90"
-                style={{ background: 'var(--gradient-primary)' }}
-              >
-                Create a Challenge
-              </button>
-            </SignUpButton>
-            <SignUpButton mode="modal">
-              <button
-                className="flex-1 px-4 py-3 rounded-xl font-bold text-sm transition hover:opacity-90"
-                style={{
-                  background: 'hsl(var(--secondary))',
-                  color: 'white',
-                }}
-              >
-                I Have an Invite
-              </button>
-            </SignUpButton>
+            Back to challenges
+          </button>
+        ) : (
+          <div className="glass rounded-2xl p-6 text-center">
+            <h3
+              className="text-base font-bold mb-1"
+              style={{ color: 'hsl(var(--foreground))' }}
+            >
+              Start your own challenge
+            </h3>
+            <p
+              className="text-sm mb-5"
+              style={{ color: 'hsl(var(--muted-foreground))' }}
+            >
+              Track workouts. Stay accountable.
+            </p>
+            <div className="flex gap-3">
+              <SignUpButton mode="modal">
+                <button
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-sm text-white transition hover:opacity-90"
+                  style={{ background: 'var(--gradient-primary)' }}
+                >
+                  Create a Challenge
+                </button>
+              </SignUpButton>
+              <SignUpButton mode="modal">
+                <button
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-sm transition hover:opacity-90"
+                  style={{
+                    background: 'hsl(var(--secondary))',
+                    color: 'white',
+                  }}
+                >
+                  I Have an Invite
+                </button>
+              </SignUpButton>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Footer */}
         <div className="text-center mt-8">

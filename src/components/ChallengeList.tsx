@@ -6,10 +6,9 @@ import type { Challenge } from '../types/challenge';
 
 interface ChallengeListProps {
   onCreateClick: () => void;
-  onJoinClick: () => void;
 }
 
-export function ChallengeList({ onCreateClick, onJoinClick }: ChallengeListProps) {
+export function ChallengeList({ onCreateClick }: ChallengeListProps) {
   const { isLoaded, isSignedIn } = useAuth();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,17 +137,6 @@ export function ChallengeList({ onCreateClick, onJoinClick }: ChallengeListProps
           >
             Create Challenge
           </button>
-          <button
-            onClick={onJoinClick}
-            className="btn-press px-5 py-2.5 text-sm font-medium"
-            style={{
-              background: 'hsl(var(--muted))',
-              color: 'hsl(var(--muted-foreground))',
-              borderRadius: 'var(--radius)',
-            }}
-          >
-            Join with Code
-          </button>
         </div>
       </div>
     );
@@ -158,17 +146,6 @@ export function ChallengeList({ onCreateClick, onJoinClick }: ChallengeListProps
     <div className="space-y-4 fade-in-up">
       {/* Action bar */}
       <div className="flex justify-end gap-2">
-        <button
-          onClick={onJoinClick}
-          className="btn-press px-4 py-2 text-sm font-medium"
-          style={{
-            background: 'hsl(var(--muted))',
-            color: 'hsl(var(--muted-foreground))',
-            borderRadius: 'var(--radius)',
-          }}
-        >
-          Join with Code
-        </button>
         <button
           onClick={onCreateClick}
           className="btn-press px-4 py-2 text-sm font-bold text-white"

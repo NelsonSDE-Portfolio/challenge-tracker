@@ -131,10 +131,25 @@ export function DebtScoreboard({ allWeeksDebt }: DebtScoreboardProps) {
                 <div className="flex items-center gap-2">
                   <span
                     className="font-semibold text-sm truncate"
-                    style={{ color: 'hsl(var(--foreground))' }}
+                    style={{
+                      color: participant.pendingInvite
+                        ? 'hsl(var(--muted-foreground))'
+                        : 'hsl(var(--foreground))',
+                    }}
                   >
                     {participant.name || 'Unknown'}
                   </span>
+                  {participant.pendingInvite && (
+                    <span
+                      className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                      style={{
+                        background: 'hsl(var(--warning) / 0.15)',
+                        color: 'hsl(var(--warning))',
+                      }}
+                    >
+                      Pending
+                    </span>
+                  )}
                   {streak > 0 && (
                     <span
                       className="text-xs px-1.5 py-0.5 rounded-full"
