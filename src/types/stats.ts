@@ -8,6 +8,7 @@ export interface ParticipantStats {
   debt: number;
   isAdmin: boolean;
   pendingInvite?: boolean;
+  loggedToday: boolean;
 }
 
 export interface ChallengeStats {
@@ -25,6 +26,7 @@ export interface MyStats {
   weeklyWorkouts: number;
   currentStreak: number;
   debt: number;
+  loggedToday: boolean;
 }
 
 export interface RecentWorkout {
