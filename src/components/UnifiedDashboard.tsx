@@ -477,12 +477,11 @@ export function UnifiedDashboard({ challenge, onChallengeUpdate }: UnifiedDashbo
         {/* Overview Section */}
         <div id="section-overview">
           {/* Hero Action Card - Log Workout */}
-          {challenge.status === 'active' && myStats && weeklyProgress && (
+          {challenge.status === 'active' && myStats && (
             <HeroActionCard
               challengeId={challenge._id}
               myStats={myStats}
               minWorkoutsPerWeek={challenge.rules.minWorkoutsPerWeek}
-              weeklyProgress={weeklyProgress}
               onWorkoutLogged={handleWorkoutLogged}
             />
           )}

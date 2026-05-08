@@ -3,13 +3,12 @@ import axios from 'axios';
 import confetti from 'canvas-confetti';
 import { workoutService } from '../services/workoutService';
 import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_LABEL, ACTIVITY_TYPES, MUSCLE_GROUPS, getMetadataFields } from '../constants';
-import type { MyStats, WeeklyProgress } from '../types/stats';
+import type { MyStats } from '../types/stats';
 
 interface HeroActionCardProps {
   challengeId: string;
   myStats: MyStats;
   minWorkoutsPerWeek: number;
-  weeklyProgress: WeeklyProgress;
   onWorkoutLogged: () => void;
 }
 
@@ -24,7 +23,6 @@ export function HeroActionCard({
   challengeId,
   myStats,
   minWorkoutsPerWeek,
-  weeklyProgress,
   onWorkoutLogged,
 }: HeroActionCardProps) {
   const [expanded, setExpanded] = useState(false);
@@ -43,10 +41,7 @@ export function HeroActionCard({
   const [showSuccess, setShowSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const todayStr = getLocalDateString();
-  const hasLoggedToday = weeklyProgress.participants.some(p =>
-    p.workoutDates.includes(todayStr)
-  );
+  const hasLoggedToday = myStats.loggedToday;
 
   const today = new Date();
   const dayOfWeek = today.getDay();
