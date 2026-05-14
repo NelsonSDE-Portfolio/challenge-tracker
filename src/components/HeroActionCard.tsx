@@ -154,22 +154,77 @@ export function HeroActionCard({
 
   const [shareLoading, setShareLoading] = useState(false);
 
-  const handleShare = async () => {
-    if (!lastWorkoutId) return;
-    setShareLoading(true);
+  const buildShareMessage = (shareUrl?: string) => {
+    const activityLabel = ACTIVITY_TYPES.find((a) => a.value === activityType);
+    const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
 
     const weeklyCount = myStats.weeklyWorkouts + 1;
     const weeklyGoal = minWorkoutsPerWeek;
+    const isWeekComplete = weeklyCount >= weeklyGoal;
+
+    let msg = `Workout logged! - ${dateLabel}\n`;
+
+    if (activityLabel) {
+      msg += `\n${activityLabel.icon} ${activityLabel.label}`;
+    }
+
+    if (metadata.distanceKm) msg += `\n${metadata.distanceKm} km`;
+    if (metadata.distanceM) msg += `\n${metadata.distanceM} m`;
+    if (metadata.durationMinutes) msg += `\n${metadata.durationMinutes} min`;
+    if (muscleGroups.length > 0) {
+      const labels = muscleGroups.map(
+        (g) => MUSCLE_GROUPS.find((mg) => mg.value === g)?.label || g,
+      );
+      msg += `\n${labels.join(', ')}`;
+    }
+    if (note) msg += `\n${note}`;
+
+    msg += `\n\nWeekly progress: ${weeklyCount}/${weeklyGoal}`;
+    if (isWeekComplete) {
+      msg += ` - Weekly goal complete!`;
+    }
+
+    if (shareUrl) msg += `\n\n${shareUrl}`;
+    msg += '\n\n- Challenge Tracker';
+    return msg;
+  };
+
+  const handleShare = async () => {
+    if (!lastWorkoutId) return;
+    setShareLoading(true);
 
     try {
       const { shareToken } = await workoutService.share(challengeId, lastWorkoutId);
       const portfolioUrl = import.meta.env.VITE_PORTFOLIO_URL || window.location.origin;
       const shareUrl = `${portfolioUrl}/projects/challenge-tracker/share/${shareToken}`;
-      const message = `Go check my workout, ${weeklyCount}/${weeklyGoal} ${shareUrl}`;
+      const message = buildShareMessage(shareUrl);
+
+      // Prefer Web Share API on mobile — native share sheet, fresh intent every
+      // invocation (avoids WhatsApp's wa.me draft-stickiness on repeated shares).
+      if (navigator.share) {
+        try {
+          const payload: ShareData = { text: message };
+          if (photo) {
+            const file = new File([photo], photo.name, { type: photo.type });
+            if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+              payload.files = [file];
+            }
+          }
+          await navigator.share(payload);
+          return;
+        } catch (err) {
+          // User cancelled, or share failed — fall through to wa.me.
+          if (err instanceof Error && err.name === 'AbortError') return;
+        }
+      }
 
       window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     } catch {
-      const message = `Go check my workout, ${weeklyCount}/${weeklyGoal}`;
+      const message = buildShareMessage();
       window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     } finally {
       setShareLoading(false);
