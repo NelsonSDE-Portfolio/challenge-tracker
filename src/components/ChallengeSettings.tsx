@@ -29,7 +29,11 @@ export function ChallengeSettings({
   const [showConfirm, setShowConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [closeLoading, setCloseLoading] = useState(false);
   const navigate = useNavigate();
+
+  const isClosed = !!challenge.closedAt || challenge.status === 'completed';
 
   const hasRulesChanged =
     minWorkoutsPerWeek !== challenge.rules.minWorkoutsPerWeek ||
@@ -73,6 +77,23 @@ export function ChallengeSettings({
     } finally {
       setSubmitting(false);
       setShowConfirm(false);
+    }
+  };
+
+  const handleCloseChallenge = async () => {
+    try {
+      setCloseLoading(true);
+      setError(null);
+      await challengeService.close(challenge._id);
+      onSuccess();
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Failed to close challenge');
+      } else {
+        setError('An unexpected error occurred');
+      }
+      setCloseLoading(false);
+      setShowCloseConfirm(false);
     }
   };
 
@@ -290,6 +311,70 @@ export function ChallengeSettings({
           </button>
         </div>
       </form>
+
+      {/* Close challenge early */}
+      {!isClosed && (
+        <div
+          className="mt-8 rounded-xl p-4"
+          style={{
+            border: '1px solid hsl(var(--warning) / 0.3)',
+            background: 'hsl(var(--warning) / 0.05)',
+          }}
+        >
+          <h3
+            className="text-sm font-bold uppercase tracking-wider mb-3"
+            style={{ color: 'hsl(var(--warning))' }}
+          >
+            Close Challenge
+          </h3>
+          <p className="text-sm mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            End this challenge now, before its scheduled date. All workouts and
+            stats are kept, debt is finalized as of today, and no new workouts
+            can be logged.
+          </p>
+
+          {!showCloseConfirm ? (
+            <button
+              onClick={() => setShowCloseConfirm(true)}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition hover:opacity-80"
+              style={{
+                background: 'hsl(var(--warning) / 0.1)',
+                color: 'hsl(var(--warning))',
+                border: '1px solid hsl(var(--warning) / 0.3)',
+              }}
+            >
+              Close Challenge Early
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>
+                Close this challenge now? This can't be undone.
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={handleCloseChallenge}
+                  disabled={closeLoading}
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                  style={{ background: 'hsl(var(--warning))' }}
+                >
+                  {closeLoading ? 'Closing...' : 'Yes, close it'}
+                </button>
+                <button
+                  onClick={() => setShowCloseConfirm(false)}
+                  disabled={closeLoading}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition hover:opacity-80"
+                  style={{
+                    background: 'hsl(var(--muted))',
+                    color: 'hsl(var(--muted-foreground))',
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Danger Zone */}
       <div

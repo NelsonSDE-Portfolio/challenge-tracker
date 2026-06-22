@@ -37,6 +37,11 @@ export const challengeService = {
     return response.data.challenge;
   },
 
+  async close(id: string): Promise<Challenge> {
+    const response = await api.post<ChallengeResponse>(`/challenges/${id}/close`);
+    return response.data.challenge;
+  },
+
   async invite(
     challengeId: string,
     email: string,
