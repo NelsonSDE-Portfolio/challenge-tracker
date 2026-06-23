@@ -2,6 +2,16 @@ import { useState } from 'react';
 import axios from 'axios';
 import { workoutService } from '../services/workoutService';
 
+// Local YYYY-MM-DD — `new Date().toISOString()` returns the UTC date, which is
+// a day ahead for evening hours in negative-offset timezones (e.g. Mexico),
+// prefilling the wrong day in the add-workout form.
+const getLocalDateString = (date: Date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 interface AdminAddWorkoutProps {
   challengeId: string;
   userId: string;
@@ -19,7 +29,7 @@ export function AdminAddWorkout({
   onSuccess,
   onCancel,
 }: AdminAddWorkoutProps) {
-  const [date, setDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(initialDate || getLocalDateString());
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [note, setNote] = useState('');

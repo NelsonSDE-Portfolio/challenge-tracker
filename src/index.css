@@ -11,11 +11,37 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  /* Stop mobile browsers from inflating font sizes on orientation change. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh; /* avoid the mobile address-bar height jump */
+  /* Prevent stray horizontal scrolling from full-width/fixed elements. */
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/*
+ * iOS Safari auto-zooms the page when a form field with font-size < 16px gains
+ * focus, and does not zoom back out — which is the "zoom in" problem on mobile.
+ * Force all controls to 16px on small screens. !important is required to beat
+ * Tailwind's text-sm/text-xs utility classes used across the forms.
+ */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }

@@ -20,6 +20,8 @@ export interface Challenge {
   startDate: string;
   endDate: string;
   status: 'upcoming' | 'active' | 'completed';
+  /** Set when an admin closed the challenge before its scheduled end date. */
+  closedAt?: string;
   participants?: Participant[];
   participantCount?: number;
   isAdmin?: boolean;
